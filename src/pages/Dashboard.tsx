@@ -3,7 +3,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Users, Scissors, Clock, BarChart } from 'lucide-react';
+import { Users, Scissors, Clock, BarChart, TrendingUp, Calendar } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -11,20 +11,20 @@ const Dashboard: React.FC = () => {
 
   // Mock data for dashboard
   const productionStats = [
-    { id: 'P001', name: 'Summer Shirt 2025', progress: 65 },
-    { id: 'P002', name: 'Formal Trousers', progress: 42 },
-    { id: 'P003', name: 'Winter Jacket', progress: 89 },
+    { id: 'P001', name: 'Summer Shirt 2025', progress: 65, color: 'from-blue-500 to-cyan-500' },
+    { id: 'P002', name: 'Formal Trousers', progress: 42, color: 'from-amber-500 to-orange-500' },
+    { id: 'P003', name: 'Winter Jacket', progress: 89, color: 'from-green-500 to-emerald-500' },
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-6 animate-fade-in">
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 rounded-lg mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Welcome back, {user?.name}</h1>
         <p className="text-muted-foreground">Here's an overview of your production and operations.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="dashboard-card border-t-4 border-t-primary shadow-md hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               {isAdmin ? 'Total Employees' : 'Total Workers'}
@@ -35,13 +35,14 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{isAdmin ? 24 : 48}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <TrendingUp className="h-3 w-3 text-green-500" />
               +2 in the last month
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="dashboard-card border-t-4 border-t-secondary shadow-md hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Products</CardTitle>
             <div className="bg-secondary/10 p-2 rounded-full text-secondary">
@@ -56,7 +57,7 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="dashboard-card border-t-4 border-t-accent shadow-md hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Today's Production</CardTitle>
             <div className="bg-accent/10 p-2 rounded-full text-accent">
@@ -65,13 +66,14 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">243 pcs</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <TrendingUp className="h-3 w-3 text-green-500" />
               +18% from yesterday
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="dashboard-card border-t-4 border-t-red-500 shadow-md hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               {isAdmin ? 'Salary Pending' : 'Today\'s Operations'}
@@ -90,14 +92,14 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="col-span-1">
-          <CardHeader>
+        <Card className="col-span-1 dashboard-card shadow-md hover:shadow-lg transition-all overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
             <CardTitle>Production Progress</CardTitle>
             <CardDescription>
               Current status of active production orders
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="space-y-6">
               {productionStats.map((product) => (
                 <div key={product.id} className="space-y-2">
@@ -105,32 +107,38 @@ const Dashboard: React.FC = () => {
                     <span className="text-sm font-medium">{product.name}</span>
                     <span className="text-sm text-gray-500">{product.progress}%</span>
                   </div>
-                  <Progress value={product.progress} className="h-2" />
+                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div 
+                      className={`h-full bg-gradient-to-r ${product.color}`} 
+                      style={{ width: `${product.progress}%`, transition: 'width 1s ease-in-out' }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
         
-        <Card className="col-span-1">
-          <CardHeader>
+        <Card className="col-span-1 dashboard-card shadow-md hover:shadow-lg transition-all overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
             <CardTitle>{isAdmin ? 'Recent Employees' : 'Recent Workers'}</CardTitle>
             <CardDescription>
               Recently added {isAdmin ? 'employees' : 'workers'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="space-y-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex items-center">
-                  <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                    <Users size={16} className="text-gray-600" />
+                <div key={i} className="flex items-center p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center mr-3">
+                    <Users size={16} className="text-primary" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">
                       {isAdmin ? `Employee ${i}` : `Worker ${i}`}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <Calendar size={12} />
                       Added on {new Date().toLocaleDateString()}
                     </p>
                   </div>
