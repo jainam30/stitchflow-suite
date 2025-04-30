@@ -77,13 +77,25 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     // Create a new employee object with the form values
+    // Fix: Explicitly define all required properties as non-optional
     const newEmployee: Employee = {
       id: Math.random().toString(36).substring(2, 11), // Simple ID generation for mock data
-      ...values,
+      name: values.name,
+      employeeId: values.employeeId,
+      address: values.address,
+      mobileNumber: values.mobileNumber,
+      emergencyNumber: values.emergencyNumber,
+      idProof: values.idProof,
       idProofImageUrl: idProofPreview || '/placeholder.svg', // Use preview URL or default placeholder
+      bankAccountDetail: values.bankAccountDetail,
       bankImageUrl: bankImagePreview || '/placeholder.svg', // Use preview URL or default placeholder
+      salary: values.salary,
+      isActive: values.isActive,
       createdBy: 'admin',
       createdAt: new Date(),
+      // Include optional fields if they exist
+      permanentAddress: values.permanentAddress,
+      currentAddress: values.currentAddress
     };
 
     onAddEmployee(newEmployee);
