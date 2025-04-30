@@ -15,9 +15,12 @@ const mockEmployees: Employee[] = [
     name: 'John Doe',
     employeeId: 'EMP001',
     address: '123 Main St, City',
+    permanentAddress: '123 Main St, City',
+    currentAddress: '123 Main St, City',
     mobileNumber: '9876543210',
     emergencyNumber: '1234567890',
     idProof: 'AADHAR1234567890',
+    idProofImageUrl: '/placeholder.svg',
     bankAccountDetail: 'BANK1234567890',
     bankImageUrl: '/placeholder.svg',
     salary: 25000,
@@ -30,9 +33,12 @@ const mockEmployees: Employee[] = [
     name: 'Jane Smith',
     employeeId: 'EMP002',
     address: '456 Oak St, Town',
+    permanentAddress: '456 Oak St, Town',
+    currentAddress: '789 Pine St, Village',
     mobileNumber: '8765432109',
     emergencyNumber: '2345678901',
     idProof: 'AADHAR0987654321',
+    idProofImageUrl: '/placeholder.svg',
     bankAccountDetail: 'BANK0987654321',
     bankImageUrl: '/placeholder.svg',
     salary: 30000,
@@ -54,6 +60,12 @@ const Employees: React.FC = () => {
   const handleToggleStatus = (id: string) => {
     setEmployees(employees.map(employee => 
       employee.id === id ? { ...employee, isActive: !employee.isActive } : employee
+    ));
+  };
+
+  const handleUpdateEmployee = (id: string, updatedEmployee: Partial<Employee>) => {
+    setEmployees(employees.map(employee => 
+      employee.id === id ? { ...employee, ...updatedEmployee } : employee
     ));
   };
 
@@ -94,7 +106,8 @@ const Employees: React.FC = () => {
 
           <EmployeeTable 
             employees={filteredEmployees} 
-            onToggleStatus={handleToggleStatus} 
+            onToggleStatus={handleToggleStatus}
+            onUpdateEmployee={handleUpdateEmployee}
           />
         </CardContent>
       </Card>
