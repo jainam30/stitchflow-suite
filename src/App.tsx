@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import Employees from "./pages/Employees";
 import Products from "./pages/Products";
+import Production from "./pages/Production";
 
 const queryClient = new QueryClient();
 
@@ -35,10 +36,10 @@ const App = () => (
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="employees" element={<Employees />} />
               <Route path="products" element={<Products />} />
+              <Route path="production" element={<Production />} />
               
               {/* Add other protected routes here */}
               {/* <Route path="workers" element={<Workers />} /> */}
-              {/* <Route path="production" element={<Production />} /> */}
               {/* <Route path="reports" element={<Reports />} /> */}
               {/* <Route path="salary" element={<Salary />} /> */}
               {/* <Route path="users" element={<Users />} /> */}

@@ -39,3 +39,39 @@ export interface WorkerProductionEntry {
   operationId: string;
   piecesDone: number;
 }
+
+export interface Production {
+  id: string;
+  name: string;
+  productionId: string;
+  poNumber: string;
+  color: string;
+  totalFabric: number;
+  average: number;
+  totalQuantity: number;
+  operations: ProductionOperationDetail[];
+  createdBy: string;
+  createdAt: Date;
+}
+
+export interface ProductionOperationDetail {
+  id: string;
+  name: string;
+  ratePerPiece: number;
+  isCompleted: boolean;
+  productionId: string;
+}
+
+export interface ProductionFormData {
+  name: string;
+  productionId: string;
+  poNumber: string;
+  color: string;
+  totalFabric: number;
+  average: number;
+  totalQuantity: number;
+  operations: {
+    name: string;
+    ratePerPiece: number;
+  }[];
+}
