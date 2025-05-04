@@ -14,9 +14,11 @@ import Login from "./pages/auth/Login";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import Employees from "./pages/Employees";
+import Workers from "./pages/Workers";
 import Products from "./pages/Products";
 import Production from "./pages/Production";
 import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -36,15 +38,11 @@ const App = () => (
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="employees" element={<Employees />} />
+              <Route path="workers" element={<Workers />} />
               <Route path="products" element={<Products />} />
               <Route path="production" element={<Production />} />
               <Route path="reports" element={<Reports />} />
-              
-              {/* Add other protected routes here */}
-              {/* <Route path="workers" element={<Workers />} /> */}
-              {/* <Route path="salary" element={<Salary />} /> */}
-              {/* <Route path="users" element={<Users />} /> */}
-              {/* <Route path="settings" element={<Settings />} /> */}
+              <Route path="settings" element={<Settings />} />
             </Route>
             
             {/* Catch-all route */}

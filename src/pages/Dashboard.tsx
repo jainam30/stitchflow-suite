@@ -3,7 +3,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Users, Scissors, Clock, BarChart, TrendingUp, Calendar } from 'lucide-react';
+import { Users, Scissors, Clock, BarChart, TrendingUp, Calendar, Clipboard } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -14,6 +14,46 @@ const Dashboard: React.FC = () => {
     { id: 'P001', name: 'Summer Shirt 2025', progress: 65, color: 'from-blue-500 to-cyan-500' },
     { id: 'P002', name: 'Formal Trousers', progress: 42, color: 'from-amber-500 to-orange-500' },
     { id: 'P003', name: 'Winter Jacket', progress: 89, color: 'from-green-500 to-emerald-500' },
+  ];
+
+  // Mock data for recent operations
+  const recentOperations = [
+    { 
+      id: 1, 
+      workerName: 'Ramesh Kumar', 
+      product: 'Summer Shirt 2025', 
+      operation: 'Cutting', 
+      pieces: 30, 
+      earnings: 150, 
+      date: new Date().toLocaleDateString() 
+    },
+    { 
+      id: 2, 
+      workerName: 'Suresh Singh', 
+      product: 'Formal Trousers', 
+      operation: 'Stitching', 
+      pieces: 25, 
+      earnings: 250, 
+      date: new Date().toLocaleDateString() 
+    },
+    { 
+      id: 3, 
+      workerName: 'Anil Patel', 
+      product: 'Winter Jacket', 
+      operation: 'Weaving', 
+      pieces: 15, 
+      earnings: 225, 
+      date: new Date().toLocaleDateString() 
+    },
+    { 
+      id: 4, 
+      workerName: 'Manoj Kumar', 
+      product: 'Summer Shirt 2025', 
+      operation: 'Cutting', 
+      pieces: 20, 
+      earnings: 100, 
+      date: new Date().toLocaleDateString() 
+    },
   ];
 
   return (
@@ -121,26 +161,32 @@ const Dashboard: React.FC = () => {
         
         <Card className="col-span-1 dashboard-card shadow-md hover:shadow-lg transition-all overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-            <CardTitle>{isAdmin ? 'Recent Employees' : 'Recent Workers'}</CardTitle>
+            <CardTitle>Recent Operations</CardTitle>
             <CardDescription>
-              Recently added {isAdmin ? 'employees' : 'workers'}
+              Recently completed work by workers
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex items-center p-2 rounded-lg hover:bg-muted/50 transition-colors">
+              {recentOperations.map((op) => (
+                <div key={op.id} className="flex items-center p-2 rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center mr-3">
-                    <Users size={16} className="text-primary" />
+                    <Clipboard size={16} className="text-primary" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {isAdmin ? `Employee ${i}` : `Worker ${i}`}
-                    </p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                      <Calendar size={12} />
-                      Added on {new Date().toLocaleDateString()}
-                    </p>
+                  <div className="flex-1">
+                    <div className="flex justify-between">
+                      <p className="text-sm font-medium">{op.workerName}</p>
+                      <p className="text-xs font-semibold text-primary">₹{op.earnings}</p>
+                    </div>
+                    <div className="flex justify-between">
+                      <p className="text-xs text-gray-500">
+                        {op.operation} - {op.product} ({op.pieces} pcs)
+                      </p>
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <Calendar size={12} />
+                        {op.date}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
