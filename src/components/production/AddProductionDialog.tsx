@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -26,6 +26,15 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Production, ProductionOperationDetail, ProductionFormData } from '@/types/production';
 import { Circle, CirclePlus, CircleMinus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+// Mock PO data for auto-filling average
+const poAverageData = {
+  'PO-12345': 0.5,
+  'PO-67890': 2.4,
+  'PO-24680': 1.8,
+  'PO-13579': 1.2,
+};
 
 // Form validation schema
 const operationSchema = z.object({
@@ -55,6 +64,7 @@ export const AddProductionDialog: React.FC<AddProductionDialogProps> = ({
   onOpenChange,
   onAddProduction,
 }) => {
+  const { toast } = useToast();
   const form = useForm<ProductionFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -68,6 +78,19 @@ export const AddProductionDialog: React.FC<AddProductionDialogProps> = ({
       operations: [{ name: "Cutting", ratePerPiece: 0 }],
     },
   });
+
+  // Watch for changes in PO Number to auto-fill average
+  const poNumber = form.watch("poNumber");
+  
+  useEffect(() => {
+    if (poNumber && poAverageData[poNumber]) {
+      form.setValue("average", poAverageData[poNumber]);
+      toast({
+        title: "Average updated",
+        description: `Average value has been set based on the selected PO number.`,
+      });
+    }
+  }, [poNumber, form, toast]);
 
   const onSubmit = (values: ProductionFormData) => {
     // Create operations array for the new production
@@ -166,8 +189,13 @@ export const AddProductionDialog: React.FC<AddProductionDialogProps> = ({
                   <FormItem>
                     <FormLabel>P.O Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter P.O number" {...field} />
+                      <Input placeholder="Enter P.O number" {...field} list="po-numbers" />
                     </FormControl>
+                    <datalist id="po-numbers">
+                      {Object.keys(poAverageData).map((po) => (
+                        <option key={po} value={po} />
+                      ))}
+                    </datalist>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -210,7 +238,12 @@ export const AddProductionDialog: React.FC<AddProductionDialogProps> = ({
                   <FormItem>
                     <FormLabel>Average (as per P.O)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0.00" 
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

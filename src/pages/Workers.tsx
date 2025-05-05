@@ -8,6 +8,7 @@ import { AddWorkerDialog } from "@/components/workers/AddWorkerDialog";
 import { WorkerTable } from "@/components/workers/WorkerTable";
 import { Worker } from '@/types/worker';
 import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 // Mock data for initial development
 const mockWorkers: Worker[] = [
@@ -59,6 +60,11 @@ const Workers: React.FC = () => {
   const [workers, setWorkers] = useState<Worker[]>(mockWorkers);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  // Ensure this page is only accessible to admin and supervisor roles
+  if (user?.role !== 'admin' && user?.role !== 'supervisor') {
+    return <Navigate to="/dashboard" />;
+  }
 
   const handleAddWorker = (newWorker: Worker) => {
     setWorkers([...workers, newWorker]);
