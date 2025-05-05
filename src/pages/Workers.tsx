@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { AddWorkerDialog } from "@/components/workers/AddWorkerDialog";
 import { WorkerTable } from "@/components/workers/WorkerTable";
 import { Worker } from '@/types/worker';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Mock data for initial development
 const mockWorkers: Worker[] = [
@@ -15,6 +16,8 @@ const mockWorkers: Worker[] = [
     name: 'Ramesh Kumar',
     workerId: 'WOR001',
     address: '123 Worker Colony, City',
+    permanentAddress: '123 Worker Colony, City',
+    currentAddress: '123 Worker Colony, City',
     mobileNumber: '8765432109',
     emergencyNumber: '9876543210',
     idProof: 'AADHAR1122334455',
@@ -34,6 +37,8 @@ const mockWorkers: Worker[] = [
     name: 'Suresh Singh',
     workerId: 'WOR002',
     address: '456 Worker Housing, Town',
+    permanentAddress: '456 Hometown, Village',
+    currentAddress: '456 Worker Housing, Town',
     mobileNumber: '7654321098',
     emergencyNumber: '8765432109',
     idProof: 'AADHAR5566778899',
@@ -50,6 +55,7 @@ const mockWorkers: Worker[] = [
 ];
 
 const Workers: React.FC = () => {
+  const { user } = useAuth();
   const [workers, setWorkers] = useState<Worker[]>(mockWorkers);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);

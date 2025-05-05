@@ -36,6 +36,7 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
         <Tabs defaultValue="basic" className="py-4">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="basic" className="flex-1">Basic Info</TabsTrigger>
+            <TabsTrigger value="address" className="flex-1">Address</TabsTrigger>
             <TabsTrigger value="documents" className="flex-1">Documents</TabsTrigger>
             <TabsTrigger value="bank" className="flex-1">Bank Details</TabsTrigger>
           </TabsList>
@@ -74,10 +75,30 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
                 <div>{worker.mobileNumber}</div>
                 <div className="font-medium">Emergency Number</div>
                 <div>{worker.emergencyNumber || 'Not provided'}</div>
-                <div className="font-medium">Address</div>
-                <div className="col-span-2">{worker.address}</div>
               </div>
             </div>
+          </TabsContent>
+          
+          <TabsContent value="address" className="space-y-6">
+            <div className="space-y-1">
+              <h4 className="text-sm font-medium text-muted-foreground">Current Address</h4>
+              <Separator className="my-2" />
+              <div className="text-sm">{worker.currentAddress || 'Not provided'}</div>
+            </div>
+            
+            <div className="space-y-1">
+              <h4 className="text-sm font-medium text-muted-foreground">Permanent Address</h4>
+              <Separator className="my-2" />
+              <div className="text-sm">{worker.permanentAddress || 'Not provided'}</div>
+            </div>
+            
+            {worker.address && (
+              <div className="space-y-1">
+                <h4 className="text-sm font-medium text-muted-foreground">Alternate Address</h4>
+                <Separator className="my-2" />
+                <div className="text-sm">{worker.address}</div>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="documents" className="space-y-6">
@@ -132,6 +153,12 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
                 <div>{worker.ifscCode || 'Not provided'}</div>
                 <div className="font-medium">Account Holder</div>
                 <div>{worker.accountHolderName || 'Not provided'}</div>
+                {worker.bankAccountDetail && (
+                  <>
+                    <div className="font-medium">Other Details</div>
+                    <div>{worker.bankAccountDetail}</div>
+                  </>
+                )}
               </div>
             </div>
             

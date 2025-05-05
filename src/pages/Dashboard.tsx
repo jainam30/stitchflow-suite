@@ -16,8 +16,8 @@ const Dashboard: React.FC = () => {
     { id: 'P003', name: 'Winter Jacket', progress: 89, color: 'from-green-500 to-emerald-500' },
   ];
 
-  // Mock data for recent operations
-  const recentOperations = [
+  // Mock data for worker operations
+  const recentWorkerOperations = [
     { 
       id: 1, 
       workerName: 'Ramesh Kumar', 
@@ -67,17 +67,17 @@ const Dashboard: React.FC = () => {
         <Card className="dashboard-card border-t-4 border-t-primary shadow-md hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {isAdmin ? 'Total Employees' : 'Total Workers'}
+              {isAdmin ? 'Total Workers' : 'Active Workers'}
             </CardTitle>
             <div className="bg-primary/10 p-2 rounded-full text-primary">
               <Users size={18} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{isAdmin ? 24 : 48}</div>
+            <div className="text-2xl font-bold">{isAdmin ? 48 : 36}</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <TrendingUp className="h-3 w-3 text-green-500" />
-              +2 in the last month
+              +3 in the last month
             </p>
           </CardContent>
         </Card>
@@ -116,7 +116,7 @@ const Dashboard: React.FC = () => {
         <Card className="dashboard-card border-t-4 border-t-red-500 shadow-md hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {isAdmin ? 'Salary Pending' : 'Today\'s Operations'}
+              {isAdmin ? 'Payments Pending' : 'Today\'s Operations'}
             </CardTitle>
             <div className="bg-red-100 p-2 rounded-full text-red-500">
               <BarChart size={18} />
@@ -161,14 +161,14 @@ const Dashboard: React.FC = () => {
         
         <Card className="col-span-1 dashboard-card shadow-md hover:shadow-lg transition-all overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-            <CardTitle>Recent Operations</CardTitle>
+            <CardTitle>Recent Worker Operations</CardTitle>
             <CardDescription>
-              Recently completed work by workers
+              Recent work completed by workers and their earnings
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-4">
-              {recentOperations.map((op) => (
+              {recentWorkerOperations.map((op) => (
                 <div key={op.id} className="flex items-center p-2 rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center mr-3">
                     <Clipboard size={16} className="text-primary" />

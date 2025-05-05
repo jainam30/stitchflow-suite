@@ -4,6 +4,8 @@ export interface Worker {
   name: string;
   workerId: string;
   address: string;
+  permanentAddress: string;
+  currentAddress: string;
   mobileNumber: string;
   emergencyNumber: string;
   idProof: string;
@@ -24,6 +26,8 @@ export interface WorkerFormData {
   name: string;
   workerId: string;
   address: string;
+  permanentAddress: string;
+  currentAddress: string;
   mobileNumber: string;
   emergencyNumber: string;
   idProof: string;
@@ -31,6 +35,7 @@ export interface WorkerFormData {
   bankAccountDetail: string;
   bankName: string;
   accountNumber: string;
+  confirmAccountNumber: string;
   ifscCode: string;
   accountHolderName: string;
   bankImage: File | null;

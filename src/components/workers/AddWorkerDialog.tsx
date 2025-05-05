@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
-import { FileImage, Upload, BankNote, User } from "lucide-react";
+import { FileImage, Upload, Banknote, User } from "lucide-react";
 
 import {
   Dialog,
@@ -39,6 +39,8 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
     name: '',
     workerId: '',
     address: '',
+    permanentAddress: '',
+    currentAddress: '',
     mobileNumber: '',
     emergencyNumber: '',
     idProof: '',
@@ -46,6 +48,7 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
     bankAccountDetail: '',
     bankName: '',
     accountNumber: '',
+    confirmAccountNumber: '',
     ifscCode: '',
     accountHolderName: '',
     bankImage: null,
@@ -58,9 +61,23 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<WorkerFormData>({ defaultValues });
 
+  const accountNumber = watch('accountNumber');
+  const confirmAccountNumber = watch('confirmAccountNumber');
+
   const onSubmit = async (data: WorkerFormData) => {
+    // Check if account numbers match
+    if (data.accountNumber !== data.confirmAccountNumber) {
+      toast({
+        title: "Error",
+        description: "Account number and confirmation do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -74,6 +91,8 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
         name: data.name,
         workerId: data.workerId,
         address: data.address,
+        permanentAddress: data.permanentAddress,
+        currentAddress: data.currentAddress,
         mobileNumber: data.mobileNumber,
         emergencyNumber: data.emergencyNumber,
         idProof: data.idProof,
@@ -136,7 +155,7 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
                 Documents
               </TabsTrigger>
               <TabsTrigger value="bank">
-                <BankNote className="mr-2 h-4 w-4" />
+                <Banknote className="mr-2 h-4 w-4" />
                 Bank Details
               </TabsTrigger>
             </TabsList>
@@ -207,16 +226,38 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
                 </div>
                 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="address">Address *</Label>
+                  <Label htmlFor="currentAddress">Current Address *</Label>
+                  <Input
+                    id="currentAddress"
+                    {...register("currentAddress", { required: "Current address is required" })}
+                    placeholder="Current address"
+                    className={errors.currentAddress ? "border-destructive" : ""}
+                  />
+                  {errors.currentAddress && (
+                    <p className="text-sm text-destructive">{errors.currentAddress.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="permanentAddress">Permanent Address *</Label>
+                  <Input
+                    id="permanentAddress"
+                    {...register("permanentAddress", { required: "Permanent address is required" })}
+                    placeholder="Permanent address"
+                    className={errors.permanentAddress ? "border-destructive" : ""}
+                  />
+                  {errors.permanentAddress && (
+                    <p className="text-sm text-destructive">{errors.permanentAddress.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="address">Alternate Address</Label>
                   <Input
                     id="address"
-                    {...register("address", { required: "Address is required" })}
-                    placeholder="Full address"
-                    className={errors.address ? "border-destructive" : ""}
+                    {...register("address")}
+                    placeholder="Alternate address (if any)"
                   />
-                  {errors.address && (
-                    <p className="text-sm text-destructive">{errors.address.message}</p>
-                  )}
                 </div>
               </div>
             </TabsContent>
@@ -281,6 +322,22 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
                   />
                   {errors.accountNumber && (
                     <p className="text-sm text-destructive">{errors.accountNumber.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="confirmAccountNumber">Confirm Account Number *</Label>
+                  <Input
+                    id="confirmAccountNumber"
+                    {...register("confirmAccountNumber", { 
+                      required: "Please confirm account number",
+                      validate: value => value === accountNumber || "Account numbers do not match"
+                    })}
+                    placeholder="Confirm account number"
+                    className={errors.confirmAccountNumber ? "border-destructive" : ""}
+                  />
+                  {errors.confirmAccountNumber && (
+                    <p className="text-sm text-destructive">{errors.confirmAccountNumber.message}</p>
                   )}
                 </div>
                 
