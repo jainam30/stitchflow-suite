@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NavLink } from 'react-router-dom';
@@ -20,6 +19,7 @@ import {
   Calendar,
   Settings,
   LogOut,
+  DollarSign,
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -126,6 +126,20 @@ const Sidebar: React.FC = () => {
                   >
                     <Calendar size={18} />
                     <span>Production</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/salary" 
+                    className={({ isActive }) => 
+                      `transition-all duration-200 hover:translate-x-1 ${isActive ? 'bg-primary/10 text-primary font-medium' : ''}`
+                    }
+                  >
+                    <DollarSign size={18} />
+                    <span>Salary</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>

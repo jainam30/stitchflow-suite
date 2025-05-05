@@ -32,3 +32,20 @@ export interface EmployeeAdvance {
   amount: number;
   createdBy: string;
 }
+
+export interface WorkerSalaryFormData {
+  workerId: string;
+  productId: string;
+  operationId: string;
+  piecesDone: number;
+  amountPerPiece: number;
+  totalAmount: number;
+}
+
+export interface EmployeeSalaryFormData {
+  employeeId: string;
+  month: Date;
+  salary: number;
+  advance: number;
+  netSalary: number;
+}

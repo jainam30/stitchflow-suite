@@ -19,6 +19,7 @@ import Products from "./pages/Products";
 import Production from "./pages/Production";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Salary from "./pages/Salary";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="production" element={<Production />} />
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="salary" element={<Salary />} />
             </Route>
             
             {/* Catch-all route */}
