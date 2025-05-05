@@ -19,7 +19,13 @@ const mockWorkers: Worker[] = [
     emergencyNumber: '9876543210',
     idProof: 'AADHAR1122334455',
     bankAccountDetail: 'BANK9988776655',
+    bankName: 'State Bank of India',
+    accountNumber: '12345678901',
+    ifscCode: 'SBIN0001234',
+    accountHolderName: 'Ramesh Kumar',
     bankImageUrl: '/placeholder.svg',
+    profileImageUrl: '/placeholder.svg',
+    addressProofImageUrl: '/placeholder.svg',
     createdBy: 'supervisor',
     createdAt: new Date('2023-01-10')
   },
@@ -32,7 +38,12 @@ const mockWorkers: Worker[] = [
     emergencyNumber: '8765432109',
     idProof: 'AADHAR5566778899',
     bankAccountDetail: 'BANK1122334455',
+    bankName: 'ICICI Bank',
+    accountNumber: '98765432109',
+    ifscCode: 'ICIC0001234',
+    accountHolderName: 'Suresh Singh',
     bankImageUrl: '/placeholder.svg',
+    profileImageUrl: '/placeholder.svg',
     createdBy: 'admin',
     createdAt: new Date('2023-02-15')
   }
