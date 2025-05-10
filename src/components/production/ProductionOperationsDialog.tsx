@@ -166,7 +166,6 @@ export const ProductionOperationsDialog: React.FC<ProductionOperationsDialogProp
             <TableHeader>
               <TableRow>
                 <TableHead>Operation</TableHead>
-                <TableHead>Worker Name</TableHead>
                 <TableHead>Rate (per piece)</TableHead>
                 <TableHead>Pieces Done</TableHead>
                 <TableHead className="text-right">Action</TableHead>
@@ -177,7 +176,6 @@ export const ProductionOperationsDialog: React.FC<ProductionOperationsDialogProp
                 <TableRow key={operation.id}>
                   <TableCell>{operation.name}</TableCell>
                   <TableCell>₹{operation.ratePerPiece}</TableCell>
-                  <TableCell>{operation.assignedWorkerName}</TableCell>
                   <TableCell>
                     <Input
                       type="number"
