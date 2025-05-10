@@ -10,11 +10,11 @@ import { AddEmployeeSalaryDialog } from '@/components/salary/AddEmployeeSalaryDi
 import { AddWorkerSalaryDialog } from '@/components/salary/AddWorkerSalaryDialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Calculator, Menu } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 import { WorkerSalary } from '@/types/salary';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Production } from '@/types/production';
 
 // Mock data for worker salaries
 const initialWorkerSalaries: WorkerSalary[] = [
@@ -57,6 +57,73 @@ const initialWorkerSalaries: WorkerSalary[] = [
   }
 ];
 
+// Import mock production data
+const mockProductions: Production[] = [
+  {
+    id: '1',
+    name: 'Summer T-Shirt Collection',
+    productionId: 'PRD-2023-001',
+    poNumber: 'PO-12345',
+    color: 'Blue',
+    totalFabric: 500,
+    average: 0.5,
+    totalQuantity: 1000,
+    operations: [
+      {
+        id: '1-1',
+        name: 'Cutting',
+        ratePerPiece: 5,
+        isCompleted: false,
+        productionId: '1'
+      },
+      {
+        id: '1-2',
+        name: 'Stitching',
+        ratePerPiece: 15,
+        isCompleted: false,
+        productionId: '1'
+      }
+    ],
+    createdBy: 'admin',
+    createdAt: new Date('2023-01-20')
+  },
+  {
+    id: '2',
+    name: 'Winter Jacket Production',
+    productionId: 'PRD-2023-002',
+    poNumber: 'PO-67890',
+    color: 'Black',
+    totalFabric: 1200,
+    average: 2.4,
+    totalQuantity: 500,
+    operations: [
+      {
+        id: '2-1',
+        name: 'Cutting',
+        ratePerPiece: 8,
+        isCompleted: false,
+        productionId: '2'
+      },
+      {
+        id: '2-2',
+        name: 'Stitching',
+        ratePerPiece: 25,
+        isCompleted: false,
+        productionId: '2'
+      },
+      {
+        id: '2-3',
+        name: 'Washing',
+        ratePerPiece: 12,
+        isCompleted: false,
+        productionId: '2'
+      }
+    ],
+    createdBy: 'admin',
+    createdAt: new Date('2023-02-15')
+  }
+];
+
 const Salary: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -67,6 +134,7 @@ const Salary: React.FC = () => {
   const [isAddWorkerSalaryOpen, setIsAddWorkerSalaryOpen] = useState(false);
   const [workerSalaries, setWorkerSalaries] = useState<WorkerSalary[]>(initialWorkerSalaries);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [productions, setProductions] = useState<Production[]>(mockProductions);
   
   // Function to add a new worker salary record
   const addWorkerSalary = (newSalary: WorkerSalary) => {
@@ -79,12 +147,62 @@ const Salary: React.FC = () => {
   
   // Function to calculate all worker salaries based on their monthly operations
   const calculateAllWorkerSalaries = () => {
-    // In a real app, this would fetch from the database and calculate
-    // For now, we'll just show a toast message
-    toast({
-      title: "Salaries Calculated",
-      description: "All worker salaries have been calculated based on their monthly operations.",
+    // Create new worker salary records based on production operations
+    const newSalaries: WorkerSalary[] = [];
+    
+    productions.forEach(production => {
+      // In a real app, you would get the actual worker assignments and pieces completed
+      // For now, we'll use some mock assignments
+      const workerAssignments = [
+        { workerId: 'WOR001', operationIds: ['1-1'], piecesDone: 120 },
+        { workerId: 'WOR002', operationIds: ['1-2'], piecesDone: 100 },
+        { workerId: 'WOR003', operationIds: ['2-1', '2-2'], piecesDone: 80 }
+      ];
+      
+      workerAssignments.forEach(assignment => {
+        assignment.operationIds.forEach(opId => {
+          const operation = production.operations.find(op => op.id === opId);
+          
+          if (operation) {
+            // Check if this salary already exists
+            const existingSalary = workerSalaries.find(s => 
+              s.workerId === assignment.workerId && 
+              s.operationId === operation.id &&
+              s.productId === production.id
+            );
+            
+            if (!existingSalary) {
+              const newSalary: WorkerSalary = {
+                id: `auto-${Date.now()}-${assignment.workerId}-${opId}`,
+                workerId: assignment.workerId,
+                productId: production.id,
+                operationId: operation.id,
+                date: new Date(),
+                piecesDone: assignment.piecesDone,
+                amountPerPiece: operation.ratePerPiece,
+                totalAmount: assignment.piecesDone * operation.ratePerPiece,
+                paid: false
+              };
+              
+              newSalaries.push(newSalary);
+            }
+          }
+        });
+      });
     });
+    
+    if (newSalaries.length > 0) {
+      setWorkerSalaries(prev => [...prev, ...newSalaries]);
+      toast({
+        title: "Salaries Calculated",
+        description: `${newSalaries.length} new salary records have been generated based on operations.`,
+      });
+    } else {
+      toast({
+        title: "No New Salaries",
+        description: "No new worker salaries to calculate at this time.",
+      });
+    }
   };
   
   // Ensure only admin and supervisor can access this page
@@ -199,7 +317,11 @@ const Salary: React.FC = () => {
                 <CardTitle className="text-lg">Workers Salary Records</CardTitle>
               </CardHeader>
               <CardContent>
-                <WorkerSalaryTable salaries={workerSalaries} setSalaries={setWorkerSalaries} />
+                <WorkerSalaryTable 
+                  salaries={workerSalaries} 
+                  setSalaries={setWorkerSalaries} 
+                  productions={productions}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -222,6 +344,7 @@ const Salary: React.FC = () => {
           open={isAddWorkerSalaryOpen} 
           onOpenChange={setIsAddWorkerSalaryOpen} 
           onAddSalary={addWorkerSalary}
+          productions={productions}
         />
 
         {isAdmin && (
@@ -260,7 +383,11 @@ const Salary: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <WorkerSalaryTable salaries={workerSalaries} setSalaries={setWorkerSalaries} />
+              <WorkerSalaryTable 
+                salaries={workerSalaries} 
+                setSalaries={setWorkerSalaries} 
+                productions={productions}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -286,6 +413,7 @@ const Salary: React.FC = () => {
         open={isAddWorkerSalaryOpen} 
         onOpenChange={setIsAddWorkerSalaryOpen} 
         onAddSalary={addWorkerSalary}
+        productions={productions}
       />
 
       {isAdmin && (

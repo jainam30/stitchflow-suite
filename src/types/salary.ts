@@ -50,6 +50,16 @@ export interface EmployeeSalaryFormData {
   netSalary: number;
 }
 
+export interface ProductionOperation {
+  id: string;
+  productionId: string;
+  operationId: string; 
+  workerId: string;
+  piecesDone: number;
+  date: Date;
+  createdBy: string;
+}
+
 // Helper functions for ID generation
 export const generateWorkerId = (currentIds: string[] = []): string => {
   const prefix = "WOR";

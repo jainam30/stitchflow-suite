@@ -26,9 +26,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { WorkerSalary } from "@/types/salary";
+import { WorkerSalary, ProductionOperation } from "@/types/salary";
 import { format } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Production, ProductionOperationDetail } from '@/types/production';
 
 // Mock data for workers
 const mockWorkers = [
@@ -40,13 +41,81 @@ const mockWorkers = [
 interface WorkerSalaryTableProps {
   salaries: WorkerSalary[];
   setSalaries: React.Dispatch<React.SetStateAction<WorkerSalary[]>>;
+  productions?: Production[];
 }
 
-export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({ salaries, setSalaries }) => {
+export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({ 
+  salaries, 
+  setSalaries,
+  productions = [] 
+}) => {
   const [month, setMonth] = useState<string>(new Date().getMonth().toString());
   const [year, setYear] = useState<string>(new Date().getFullYear().toString());
   const [aggregatedSalaries, setAggregatedSalaries] = useState<any[]>([]);
   const isMobile = useIsMobile();
+  
+  // Function to generate automatic salaries from production operations
+  const generateSalariesFromProductions = () => {
+    // Skip if no productions available
+    if (!productions || productions.length === 0) return;
+    
+    const generatedSalaries: WorkerSalary[] = [];
+    
+    // For each production, check operations and generate salary records
+    productions.forEach(production => {
+      // Mock worker assignments - in a real app this would come from your database
+      const workerAssignments = [
+        { workerId: 'WOR001', operationIds: ['1-1', '2-2'] },
+        { workerId: 'WOR002', operationIds: ['1-2', '2-1'] },
+        { workerId: 'WOR003', operationIds: ['2-3'] },
+      ];
+      
+      // For each operation in the production
+      production.operations.forEach(operation => {
+        // Find workers assigned to this operation
+        const assignedWorkers = workerAssignments.filter(
+          assignment => assignment.operationIds.includes(operation.id)
+        );
+        
+        assignedWorkers.forEach(worker => {
+          // Calculate pieces done - in a real app you'd have actual tracking data
+          const piecesDone = Math.floor(Math.random() * production.totalQuantity * 0.5) + 1;
+          
+          // Check if salary record already exists for this worker/operation
+          const existingSalary = salaries.find(
+            s => s.workerId === worker.workerId && 
+                 s.operationId === operation.id &&
+                 s.productId === production.id
+          );
+          
+          if (!existingSalary && piecesDone > 0) {
+            // Create new salary record
+            generatedSalaries.push({
+              id: `auto-${Date.now()}-${worker.workerId}-${operation.id}`,
+              workerId: worker.workerId,
+              productId: production.id,
+              date: new Date(),
+              operationId: operation.id,
+              piecesDone: piecesDone,
+              amountPerPiece: operation.ratePerPiece,
+              totalAmount: piecesDone * operation.ratePerPiece,
+              paid: false
+            });
+          }
+        });
+      });
+    });
+    
+    // Add the generated salaries to the existing ones
+    if (generatedSalaries.length > 0) {
+      setSalaries(prevSalaries => [...prevSalaries, ...generatedSalaries]);
+    }
+  };
+  
+  // Call once when component mounts to generate initial salaries
+  useEffect(() => {
+    generateSalariesFromProductions();
+  }, [productions]);
   
   // Calculate aggregated salaries by worker when month, year, or salaries change
   useEffect(() => {
@@ -82,16 +151,24 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({ salaries, 
       workerData.totalPieces += salary.piecesDone;
       workerData.totalAmount += salary.totalAmount;
       workerData.paid = workerData.paid && salary.paid;
+      
+      const prodName = productions.find(p => p.id === salary.productId)?.name || 'Unknown Product';
+      const opName = productions.find(p => p.id === salary.productId)?.operations.find(
+        o => o.id === salary.operationId
+      )?.name || 'Unknown Operation';
+      
       workerData.operations.push({
         productId: salary.productId,
+        productName: prodName,
         operationId: salary.operationId,
+        operationName: opName,
         piecesDone: salary.piecesDone,
         amount: salary.totalAmount
       });
     });
     
     setAggregatedSalaries(Array.from(workerSalaryMap.values()));
-  }, [month, year, salaries]);
+  }, [month, year, salaries, productions]);
   
   const markAsPaid = (workerId: string) => {
     setSalaries(prevSalaries => prevSalaries.map(salary => 

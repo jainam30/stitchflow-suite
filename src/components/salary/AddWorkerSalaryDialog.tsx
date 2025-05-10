@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,48 +18,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { WorkerSalary, WorkerSalaryFormData } from '@/types/salary';
-import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
+import { Production } from '@/types/production';
 
 interface AddWorkerSalaryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddSalary: (salary: WorkerSalary) => void;
+  productions?: Production[];
 }
 
-// Mock data for workers, products and operations
+// Mock data for workers
 const mockWorkers = [
   { id: 'WOR001', name: 'Ramesh Kumar' },
   { id: 'WOR002', name: 'Suresh Singh' },
   { id: 'WOR003', name: 'Manoj Verma' },
 ];
 
-const mockProducts = [
-  { id: 'P001', name: 'Summer Shirt 2025' },
-  { id: 'P002', name: 'Formal Trousers' },
-  { id: 'P003', name: 'Winter Jacket' },
-];
-
-const mockOperations = [
-  { id: 'OP001', name: 'Cutting', rate: 5 },
-  { id: 'OP002', name: 'Stitching', rate: 10 },
-  { id: 'OP003', name: 'Weaving', rate: 15 },
-];
-
-// Mock record of worker operations for auto-calculation
-const mockWorkerOperations = [
-  { workerId: 'WOR001', productId: 'P001', operationId: 'OP001', piecesDone: 45, date: new Date('2023-04-15') },
-  { workerId: 'WOR001', productId: 'P003', operationId: 'OP003', piecesDone: 25, date: new Date('2023-04-17') },
-  { workerId: 'WOR002', productId: 'P002', operationId: 'OP002', piecesDone: 30, date: new Date('2023-04-16') },
-];
-
 export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
   open,
   onOpenChange,
-  onAddSalary
+  onAddSalary,
+  productions = []
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -73,16 +57,26 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
   });
   
   const [selectedWorker, setSelectedWorker] = useState<typeof mockWorkers[0] | null>(null);
-  const [selectedOperation, setSelectedOperation] = useState<typeof mockOperations[0] | null>(null);
-  const [autoCalculatedPieces, setAutoCalculatedPieces] = useState(0);
+  const [selectedOperation, setSelectedOperation] = useState<any | null>(null);
+  const [selectedProduction, setSelectedProduction] = useState<Production | null>(null);
+  const [availableOperations, setAvailableOperations] = useState<any[]>([]);
   
-  // Generate a new worker ID with WOR prefix followed by a sequential number
-  const generateWorkerId = () => {
-    const lastId = mockWorkers.length > 0 
-      ? parseInt(mockWorkers[mockWorkers.length - 1].id.replace('WOR', '')) 
-      : 0;
-    return `WOR${String(lastId + 1).padStart(3, '0')}`;
-  };
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        workerId: '',
+        productId: '',
+        operationId: '',
+        piecesDone: 0,
+        amountPerPiece: 0,
+        totalAmount: 0,
+      });
+      setSelectedWorker(null);
+      setSelectedOperation(null);
+      setSelectedProduction(null);
+    }
+  }, [open]);
   
   const handleWorkerChange = (value: string) => {
     const worker = mockWorkers.find(w => w.id === value);
@@ -93,40 +87,38 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
         ...prev,
         workerId: value,
       }));
-      
-      // Auto-calculate total pieces done by this worker across all operations
-      const workerOperations = mockWorkerOperations.filter(op => op.workerId === value);
-      const totalPieces = workerOperations.reduce((sum, op) => sum + op.piecesDone, 0);
-      setAutoCalculatedPieces(totalPieces);
     }
   };
   
-  const handleProductChange = (value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      productId: value,
-    }));
+  const handleProductionChange = (value: string) => {
+    const production = productions.find(p => p.id === value);
+    
+    if (production) {
+      setSelectedProduction(production);
+      setAvailableOperations(production.operations);
+      
+      setFormData(prev => ({
+        ...prev,
+        productId: value,
+        operationId: '',
+        amountPerPiece: 0,
+        piecesDone: 0,
+        totalAmount: 0,
+      }));
+    }
   };
   
   const handleOperationChange = (value: string) => {
-    const operation = mockOperations.find(op => op.id === value);
+    const operation = availableOperations.find(op => op.id === value);
     
     if (operation) {
       setSelectedOperation(operation);
       
-      // Find matching worker operations for auto-calculation
-      const matchingOperations = mockWorkerOperations.filter(
-        op => op.workerId === formData.workerId && op.operationId === value
-      );
-      
-      const piecesDone = matchingOperations.reduce((sum, op) => sum + op.piecesDone, 0);
-      
       setFormData(prev => ({
         ...prev,
         operationId: value,
-        amountPerPiece: operation.rate,
-        piecesDone: piecesDone,
-        totalAmount: piecesDone * operation.rate
+        amountPerPiece: operation.ratePerPiece,
+        totalAmount: prev.piecesDone * operation.ratePerPiece
       }));
     }
   };
@@ -192,6 +184,7 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
     });
     setSelectedOperation(null);
     setSelectedWorker(null);
+    setSelectedProduction(null);
     onOpenChange(false);
   };
   
@@ -227,18 +220,18 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="product">Product</Label>
+              <Label htmlFor="production">Production</Label>
               <Select
                 value={formData.productId}
-                onValueChange={handleProductChange}
+                onValueChange={handleProductionChange}
               >
-                <SelectTrigger id="product">
-                  <SelectValue placeholder="Select product" />
+                <SelectTrigger id="production">
+                  <SelectValue placeholder="Select production" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockProducts.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name}
+                  {productions.map((production) => (
+                    <SelectItem key={production.id} value={production.id}>
+                      {production.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -252,14 +245,15 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
               <Select
                 value={formData.operationId}
                 onValueChange={handleOperationChange}
+                disabled={!selectedProduction}
               >
                 <SelectTrigger id="operation">
                   <SelectValue placeholder="Select operation" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockOperations.map((operation) => (
+                  {availableOperations.map((operation) => (
                     <SelectItem key={operation.id} value={operation.id}>
-                      {operation.name} (₹{operation.rate}/piece)
+                      {operation.name} (₹{operation.ratePerPiece}/piece)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -290,6 +284,8 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
                 placeholder="Enter rate per piece"
                 value={formData.amountPerPiece || ''}
                 onChange={handleAmountPerPieceChange}
+                readOnly={!!selectedOperation}
+                className={selectedOperation ? "bg-muted" : ""}
               />
             </div>
             
@@ -300,13 +296,17 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
                 type="number"
                 readOnly
                 value={formData.totalAmount || 0}
+                className="bg-muted"
               />
             </div>
           </div>
           
-          {selectedWorker && autoCalculatedPieces > 0 && (
+          {selectedProduction && (
             <div className="text-sm text-muted-foreground">
-              <p>Total pieces completed by this worker this month: {autoCalculatedPieces}</p>
+              <p>Selected Production: {selectedProduction.name} ({selectedProduction.productionId})</p>
+              {selectedOperation && (
+                <p>Operation Rate: ₹{selectedOperation.ratePerPiece} per piece</p>
+              )}
             </div>
           )}
           
