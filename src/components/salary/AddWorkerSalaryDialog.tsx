@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -19,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { WorkerSalary } from '@/types/salary';
+import { WorkerSalary, WorkerSalaryFormData } from '@/types/salary';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
@@ -27,6 +26,7 @@ import { v4 as uuidv4 } from 'uuid';
 interface AddWorkerSalaryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onAddSalary: (salary: WorkerSalary) => void;
 }
 
 // Mock data for workers, products and operations
@@ -58,11 +58,12 @@ const mockWorkerOperations = [
 export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
   open,
   onOpenChange,
+  onAddSalary
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<WorkerSalaryFormData>({
     workerId: '',
     productId: '',
     operationId: '',
@@ -176,13 +177,9 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
       paid: false,
     };
     
-    // In a real app, you would save this to a database
+    // Pass the new salary to the parent component
+    onAddSalary(newSalary);
     console.log('New worker salary record:', newSalary);
-    
-    toast({
-      title: "Success",
-      description: "Worker salary record has been added successfully.",
-    });
     
     // Reset form and close dialog
     setFormData({

@@ -12,6 +12,48 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Calculator } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
+import { WorkerSalary } from '@/types/salary';
+
+// Mock data for worker salaries
+const initialWorkerSalaries: WorkerSalary[] = [
+  {
+    id: '1',
+    workerId: 'WOR001',
+    productId: 'P001',
+    date: new Date('2023-04-15'),
+    operationId: 'OP001',
+    piecesDone: 45,
+    amountPerPiece: 5,
+    totalAmount: 45 * 5,
+    paid: true,
+    paidDate: new Date('2023-04-16'),
+    paidBy: 'supervisor'
+  },
+  {
+    id: '2',
+    workerId: 'WOR002',
+    productId: 'P002',
+    date: new Date('2023-04-16'),
+    operationId: 'OP002',
+    piecesDone: 30,
+    amountPerPiece: 10,
+    totalAmount: 30 * 10,
+    paid: true,
+    paidDate: new Date('2023-04-17'),
+    paidBy: 'admin'
+  },
+  {
+    id: '3',
+    workerId: 'WOR001',
+    productId: 'P003',
+    date: new Date('2023-04-17'),
+    operationId: 'OP003',
+    piecesDone: 25,
+    amountPerPiece: 15,
+    totalAmount: 25 * 15,
+    paid: false
+  }
+];
 
 const Salary: React.FC = () => {
   const { user } = useAuth();
@@ -20,6 +62,16 @@ const Salary: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("workers");
   const [isAddEmployeeSalaryOpen, setIsAddEmployeeSalaryOpen] = useState(false);
   const [isAddWorkerSalaryOpen, setIsAddWorkerSalaryOpen] = useState(false);
+  const [workerSalaries, setWorkerSalaries] = useState<WorkerSalary[]>(initialWorkerSalaries);
+  
+  // Function to add a new worker salary record
+  const addWorkerSalary = (newSalary: WorkerSalary) => {
+    setWorkerSalaries(prev => [...prev, newSalary]);
+    toast({
+      title: "Success",
+      description: "Worker salary record has been added successfully.",
+    });
+  };
   
   // Function to calculate all worker salaries based on their monthly operations
   const calculateAllWorkerSalaries = () => {
@@ -81,7 +133,7 @@ const Salary: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <WorkerSalaryTable />
+              <WorkerSalaryTable salaries={workerSalaries} setSalaries={setWorkerSalaries} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -106,6 +158,7 @@ const Salary: React.FC = () => {
       <AddWorkerSalaryDialog 
         open={isAddWorkerSalaryOpen} 
         onOpenChange={setIsAddWorkerSalaryOpen} 
+        onAddSalary={addWorkerSalary}
       />
 
       {isAdmin && (

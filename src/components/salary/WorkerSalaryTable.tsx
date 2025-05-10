@@ -29,62 +29,19 @@ import {
 import { WorkerSalary } from "@/types/salary";
 import { format } from 'date-fns';
 
-// Mock data for workers and their operations
+// Mock data for workers
 const mockWorkers = [
   { id: 'WOR001', name: 'Ramesh Kumar' },
   { id: 'WOR002', name: 'Suresh Singh' },
   { id: 'WOR003', name: 'Manoj Verma' },
 ];
 
-const mockOperations = [
-  { workerId: 'WOR001', productId: 'P001', operationId: 'OP001', piecesDone: 45, amountPerPiece: 5, date: new Date('2023-04-15') },
-  { workerId: 'WOR001', productId: 'P003', operationId: 'OP003', piecesDone: 25, amountPerPiece: 15, date: new Date('2023-04-17') },
-  { workerId: 'WOR002', productId: 'P002', operationId: 'OP002', piecesDone: 30, amountPerPiece: 10, date: new Date('2023-04-16') },
-];
+interface WorkerSalaryTableProps {
+  salaries: WorkerSalary[];
+  setSalaries: React.Dispatch<React.SetStateAction<WorkerSalary[]>>;
+}
 
-// Mock data for worker salaries
-const mockWorkerSalaries: WorkerSalary[] = [
-  {
-    id: '1',
-    workerId: 'WOR001',
-    productId: 'P001',
-    date: new Date('2023-04-15'),
-    operationId: 'OP001',
-    piecesDone: 45,
-    amountPerPiece: 5,
-    totalAmount: 45 * 5,
-    paid: true,
-    paidDate: new Date('2023-04-16'),
-    paidBy: 'supervisor'
-  },
-  {
-    id: '2',
-    workerId: 'WOR002',
-    productId: 'P002',
-    date: new Date('2023-04-16'),
-    operationId: 'OP002',
-    piecesDone: 30,
-    amountPerPiece: 10,
-    totalAmount: 30 * 10,
-    paid: true,
-    paidDate: new Date('2023-04-17'),
-    paidBy: 'admin'
-  },
-  {
-    id: '3',
-    workerId: 'WOR001',
-    productId: 'P003',
-    date: new Date('2023-04-17'),
-    operationId: 'OP003',
-    piecesDone: 25,
-    amountPerPiece: 15,
-    totalAmount: 25 * 15,
-    paid: false
-  }
-];
-
-export const WorkerSalaryTable: React.FC = () => {
-  const [salaries, setSalaries] = useState<WorkerSalary[]>(mockWorkerSalaries);
+export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({ salaries, setSalaries }) => {
   const [month, setMonth] = useState<string>(new Date().getMonth().toString());
   const [year, setYear] = useState<string>(new Date().getFullYear().toString());
   const [aggregatedSalaries, setAggregatedSalaries] = useState<any[]>([]);
