@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -28,6 +28,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { WorkerSalary } from "@/types/salary";
 import { format } from 'date-fns';
+
+// Mock data for workers and their operations
+const mockWorkers = [
+  { id: 'WOR001', name: 'Ramesh Kumar' },
+  { id: 'WOR002', name: 'Suresh Singh' },
+  { id: 'WOR003', name: 'Manoj Verma' },
+];
+
+const mockOperations = [
+  { workerId: 'WOR001', productId: 'P001', operationId: 'OP001', piecesDone: 45, amountPerPiece: 5, date: new Date('2023-04-15') },
+  { workerId: 'WOR001', productId: 'P003', operationId: 'OP003', piecesDone: 25, amountPerPiece: 15, date: new Date('2023-04-17') },
+  { workerId: 'WOR002', productId: 'P002', operationId: 'OP002', piecesDone: 30, amountPerPiece: 10, date: new Date('2023-04-16') },
+];
 
 // Mock data for worker salaries
 const mockWorkerSalaries: WorkerSalary[] = [
@@ -74,10 +87,56 @@ export const WorkerSalaryTable: React.FC = () => {
   const [salaries, setSalaries] = useState<WorkerSalary[]>(mockWorkerSalaries);
   const [month, setMonth] = useState<string>(new Date().getMonth().toString());
   const [year, setYear] = useState<string>(new Date().getFullYear().toString());
+  const [aggregatedSalaries, setAggregatedSalaries] = useState<any[]>([]);
   
-  const markAsPaid = (id: string) => {
+  // Calculate aggregated salaries by worker when month, year, or salaries change
+  useEffect(() => {
+    const selectedMonth = parseInt(month);
+    const selectedYear = parseInt(year);
+    
+    // Filter salaries for selected month and year
+    const filteredSalaries = salaries.filter(salary => {
+      const salaryDate = new Date(salary.date);
+      return (
+        salaryDate.getMonth() === selectedMonth &&
+        salaryDate.getFullYear() === selectedYear
+      );
+    });
+    
+    // Aggregate by worker
+    const workerSalaryMap = new Map();
+    
+    filteredSalaries.forEach(salary => {
+      if (!workerSalaryMap.has(salary.workerId)) {
+        const worker = mockWorkers.find(w => w.id === salary.workerId);
+        workerSalaryMap.set(salary.workerId, {
+          workerId: salary.workerId,
+          workerName: worker ? worker.name : 'Unknown Worker',
+          totalPieces: 0,
+          totalAmount: 0,
+          operations: [],
+          paid: true
+        });
+      }
+      
+      const workerData = workerSalaryMap.get(salary.workerId);
+      workerData.totalPieces += salary.piecesDone;
+      workerData.totalAmount += salary.totalAmount;
+      workerData.paid = workerData.paid && salary.paid;
+      workerData.operations.push({
+        productId: salary.productId,
+        operationId: salary.operationId,
+        piecesDone: salary.piecesDone,
+        amount: salary.totalAmount
+      });
+    });
+    
+    setAggregatedSalaries(Array.from(workerSalaryMap.values()));
+  }, [month, year, salaries]);
+  
+  const markAsPaid = (workerId: string) => {
     setSalaries(prevSalaries => prevSalaries.map(salary => 
-      salary.id === id ? { 
+      salary.workerId === workerId && !salary.paid ? { 
         ...salary, 
         paid: true,
         paidDate: new Date(),
@@ -86,8 +145,8 @@ export const WorkerSalaryTable: React.FC = () => {
     ));
   };
 
-  const handleDeleteSalary = (id: string) => {
-    setSalaries(prevSalaries => prevSalaries.filter(salary => salary.id !== id));
+  const handleDeleteSalary = (workerId: string) => {
+    setSalaries(prevSalaries => prevSalaries.filter(salary => salary.workerId !== workerId));
   };
 
   const months = [
@@ -107,15 +166,6 @@ export const WorkerSalaryTable: React.FC = () => {
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => (currentYear - 2 + i).toString());
-
-  // Filter salaries based on selected month and year
-  const filteredSalaries = salaries.filter(salary => {
-    const salaryDate = new Date(salary.date);
-    return (
-      salaryDate.getMonth() === parseInt(month) &&
-      salaryDate.getFullYear() === parseInt(year)
-    );
-  });
 
   return (
     <div className="space-y-4">
@@ -150,36 +200,30 @@ export const WorkerSalaryTable: React.FC = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Worker ID</TableHead>
-              <TableHead>Product ID</TableHead>
-              <TableHead>Operation</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Pieces</TableHead>
-              <TableHead className="text-right">Rate (₹)</TableHead>
-              <TableHead className="text-right">Total (₹)</TableHead>
+              <TableHead>Worker Name</TableHead>
+              <TableHead className="text-right">Total Pieces</TableHead>
+              <TableHead className="text-right">Total Amount (₹)</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredSalaries.length === 0 ? (
+            {aggregatedSalaries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   No salary records found for the selected period
                 </TableCell>
               </TableRow>
             ) : (
-              filteredSalaries.map((salary) => (
-                <TableRow key={salary.id}>
-                  <TableCell>{salary.workerId}</TableCell>
-                  <TableCell>{salary.productId}</TableCell>
-                  <TableCell>{salary.operationId}</TableCell>
-                  <TableCell>{format(salary.date, 'dd/MM/yyyy')}</TableCell>
-                  <TableCell className="text-right">{salary.piecesDone}</TableCell>
-                  <TableCell className="text-right">₹{salary.amountPerPiece}</TableCell>
-                  <TableCell className="text-right font-medium">₹{salary.totalAmount}</TableCell>
+              aggregatedSalaries.map((workerSalary) => (
+                <TableRow key={workerSalary.workerId}>
+                  <TableCell>{workerSalary.workerId}</TableCell>
+                  <TableCell>{workerSalary.workerName}</TableCell>
+                  <TableCell className="text-right">{workerSalary.totalPieces}</TableCell>
+                  <TableCell className="text-right font-medium">₹{workerSalary.totalAmount}</TableCell>
                   <TableCell>
-                    <Badge variant={salary.paid ? "success" : "outline"} className={salary.paid ? "bg-green-100 text-green-800" : ""}>
-                      {salary.paid ? 'Paid' : 'Pending'}
+                    <Badge variant={workerSalary.paid ? "success" : "outline"} className={workerSalary.paid ? "bg-green-100 text-green-800" : ""}>
+                      {workerSalary.paid ? 'Paid' : 'Pending'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -199,22 +243,16 @@ export const WorkerSalaryTable: React.FC = () => {
                         >
                           View Details
                         </DropdownMenuItem>
-                        {!salary.paid && (
+                        {!workerSalary.paid && (
                           <DropdownMenuItem
-                            onClick={() => markAsPaid(salary.id)}
+                            onClick={() => markAsPaid(workerSalary.workerId)}
                             className="cursor-pointer"
                           >
                             Mark as Paid
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
-                          onClick={() => {}}
-                          className="cursor-pointer"
-                        >
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteSalary(salary.id)}
+                          onClick={() => handleDeleteSalary(workerSalary.workerId)}
                           className="cursor-pointer text-destructive"
                         >
                           Delete

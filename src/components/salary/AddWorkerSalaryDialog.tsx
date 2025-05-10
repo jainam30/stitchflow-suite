@@ -48,6 +48,13 @@ const mockOperations = [
   { id: 'OP003', name: 'Weaving', rate: 15 },
 ];
 
+// Mock record of worker operations for auto-calculation
+const mockWorkerOperations = [
+  { workerId: 'WOR001', productId: 'P001', operationId: 'OP001', piecesDone: 45, date: new Date('2023-04-15') },
+  { workerId: 'WOR001', productId: 'P003', operationId: 'OP003', piecesDone: 25, date: new Date('2023-04-17') },
+  { workerId: 'WOR002', productId: 'P002', operationId: 'OP002', piecesDone: 30, date: new Date('2023-04-16') },
+];
+
 export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
   open,
   onOpenChange,
@@ -64,13 +71,33 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
     totalAmount: 0,
   });
   
+  const [selectedWorker, setSelectedWorker] = useState<typeof mockWorkers[0] | null>(null);
   const [selectedOperation, setSelectedOperation] = useState<typeof mockOperations[0] | null>(null);
+  const [autoCalculatedPieces, setAutoCalculatedPieces] = useState(0);
+  
+  // Generate a new worker ID with WOR prefix followed by a sequential number
+  const generateWorkerId = () => {
+    const lastId = mockWorkers.length > 0 
+      ? parseInt(mockWorkers[mockWorkers.length - 1].id.replace('WOR', '')) 
+      : 0;
+    return `WOR${String(lastId + 1).padStart(3, '0')}`;
+  };
   
   const handleWorkerChange = (value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      workerId: value,
-    }));
+    const worker = mockWorkers.find(w => w.id === value);
+    
+    if (worker) {
+      setSelectedWorker(worker);
+      setFormData(prev => ({
+        ...prev,
+        workerId: value,
+      }));
+      
+      // Auto-calculate total pieces done by this worker across all operations
+      const workerOperations = mockWorkerOperations.filter(op => op.workerId === value);
+      const totalPieces = workerOperations.reduce((sum, op) => sum + op.piecesDone, 0);
+      setAutoCalculatedPieces(totalPieces);
+    }
   };
   
   const handleProductChange = (value: string) => {
@@ -85,11 +112,20 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
     
     if (operation) {
       setSelectedOperation(operation);
+      
+      // Find matching worker operations for auto-calculation
+      const matchingOperations = mockWorkerOperations.filter(
+        op => op.workerId === formData.workerId && op.operationId === value
+      );
+      
+      const piecesDone = matchingOperations.reduce((sum, op) => sum + op.piecesDone, 0);
+      
       setFormData(prev => ({
         ...prev,
         operationId: value,
         amountPerPiece: operation.rate,
-        totalAmount: prev.piecesDone * operation.rate
+        piecesDone: piecesDone,
+        totalAmount: piecesDone * operation.rate
       }));
     }
   };
@@ -158,6 +194,7 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
       totalAmount: 0,
     });
     setSelectedOperation(null);
+    setSelectedWorker(null);
     onOpenChange(false);
   };
   
@@ -269,6 +306,12 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
               />
             </div>
           </div>
+          
+          {selectedWorker && autoCalculatedPieces > 0 && (
+            <div className="text-sm text-muted-foreground">
+              <p>Total pieces completed by this worker this month: {autoCalculatedPieces}</p>
+            </div>
+          )}
           
           <DialogFooter>
             <Button type="submit">Add Salary Record</Button>

@@ -49,3 +49,63 @@ export interface EmployeeSalaryFormData {
   advance: number;
   netSalary: number;
 }
+
+// Helper functions for ID generation
+export const generateWorkerId = (currentIds: string[] = []): string => {
+  const prefix = "WOR";
+  let lastNumber = 0;
+  
+  if (currentIds.length > 0) {
+    // Extract numbers from existing IDs and find the highest
+    const numbers = currentIds
+      .filter(id => id.startsWith(prefix))
+      .map(id => parseInt(id.replace(prefix, ''), 10))
+      .filter(num => !isNaN(num));
+    
+    if (numbers.length > 0) {
+      lastNumber = Math.max(...numbers);
+    }
+  }
+  
+  return `${prefix}${String(lastNumber + 1).padStart(3, '0')}`;
+};
+
+export const generateEmployeeId = (currentIds: string[] = []): string => {
+  const prefix = "EMP";
+  let lastNumber = 0;
+  
+  if (currentIds.length > 0) {
+    // Extract numbers from existing IDs and find the highest
+    const numbers = currentIds
+      .filter(id => id.startsWith(prefix))
+      .map(id => parseInt(id.replace(prefix, ''), 10))
+      .filter(num => !isNaN(num));
+    
+    if (numbers.length > 0) {
+      lastNumber = Math.max(...numbers);
+    }
+  }
+  
+  return `${prefix}${String(lastNumber + 1).padStart(3, '0')}`;
+};
+
+export const generateProductionId = (currentIds: string[] = []): string => {
+  const prefix = "PRD";
+  const year = new Date().getFullYear();
+  let lastNumber = 0;
+  
+  if (currentIds.length > 0) {
+    // Extract numbers from existing IDs with this year
+    const yearPrefix = `${prefix}-${year}-`;
+    const numbers = currentIds
+      .filter(id => id.startsWith(yearPrefix))
+      .map(id => parseInt(id.replace(yearPrefix, ''), 10))
+      .filter(num => !isNaN(num));
+    
+    if (numbers.length > 0) {
+      lastNumber = Math.max(...numbers);
+    }
+  }
+  
+  return `${prefix}-${year}-${String(lastNumber + 1).padStart(3, '0')}`;
+};

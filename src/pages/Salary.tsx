@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,15 +9,27 @@ import { WorkerSalaryTable } from '@/components/salary/WorkerSalaryTable';
 import { AddEmployeeSalaryDialog } from '@/components/salary/AddEmployeeSalaryDialog';
 import { AddWorkerSalaryDialog } from '@/components/salary/AddWorkerSalaryDialog';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Calculator } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 
 const Salary: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const isAdmin = user?.role === 'admin';
   const [activeTab, setActiveTab] = useState<string>("workers");
   const [isAddEmployeeSalaryOpen, setIsAddEmployeeSalaryOpen] = useState(false);
   const [isAddWorkerSalaryOpen, setIsAddWorkerSalaryOpen] = useState(false);
+  
+  // Function to calculate all worker salaries based on their monthly operations
+  const calculateAllWorkerSalaries = () => {
+    // In a real app, this would fetch from the database and calculate
+    // For now, we'll just show a toast message
+    toast({
+      title: "Salaries Calculated",
+      description: "All worker salaries have been calculated based on their monthly operations.",
+    });
+  };
   
   // Ensure only admin and supervisor can access this page
   if (user?.role !== 'admin' && user?.role !== 'supervisor') {
@@ -28,6 +40,16 @@ const Salary: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Salary Management</h1>
+        
+        {activeTab === "workers" && (
+          <Button 
+            variant="outline" 
+            onClick={calculateAllWorkerSalaries}
+            className="mr-2"
+          >
+            <Calculator className="mr-2 h-4 w-4" /> Calculate All Salaries
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="workers" value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -55,7 +77,7 @@ const Salary: React.FC = () => {
             <CardHeader>
               <CardTitle>Workers Salary Records</CardTitle>
               <CardDescription>
-                Manage and track salary payments to production workers based on operations and daily work.
+                Monthly salary payments to production workers based on operations and piece rates.
               </CardDescription>
             </CardHeader>
             <CardContent>
