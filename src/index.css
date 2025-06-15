@@ -5,11 +5,15 @@
 /* ==== THEME COLOR VARIABLES ==== */
 :root {
   /* Brand palette for Tailwind custom colors */
-  --primary: 168 94% 38%;
-  --primary-foreground: 168 100% 97%;
-  --secondary: 189 97% 56%;
+  /* 
+    Project gradient: from-[#065f46] (green), via-[#1e3a8a] (blue), to-[#ea580c] (orange) 
+    We'll use #0fb981 as the base primary for compatible usage. 
+  */
+  --primary: 160 91% 35%;            /* #065f46 (dark green for primary) */
+  --primary-foreground: 30 100% 97%; /* A light off-white/orange background for contrast */
+  --secondary: 222 74% 42%;          /* blue: #1e3a8a */
   --secondary-foreground: 0 0% 100%;
-  --accent: 165 73% 45%;
+  --accent: 27 98% 54%;              /* orange: #ea580c */
   --accent-foreground: 0 0% 100%;
 
   --destructive: 1 82% 61%;
@@ -23,7 +27,7 @@
 
   --border: 215 13% 91%;
   --input: 210 40% 96%;
-  --ring: 165 73% 45%;
+  --ring: 27 98% 54%;
 
   --popover: 0 0% 100%;
   --popover-foreground: 210 20% 15%;
@@ -32,20 +36,31 @@
   --card-foreground: 210 20% 18%;
 
   /* Sidebar custom */
-  --sidebar-background: 168 94% 39%;
-  --sidebar-foreground: 168 100% 97%;
-  --sidebar-primary: 189 97% 56%;
+  --sidebar-background: 160 91% 35%;
+  --sidebar-foreground: 30 100% 97%;
+  --sidebar-primary: 222 74% 42%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 165 73% 45%;
+  --sidebar-accent: 27 98% 54%;
   --sidebar-accent-foreground: 0 0% 100%;
   --sidebar-border: 168 54% 82%;
-  --sidebar-ring: 165 73% 45%;
+  --sidebar-ring: 27 98% 54%;
 
   --radius: 0.5rem;
 }
 
 #root {
   width: 100%;
+}
+
+/* Project-wide background gradient utility class you can use on any element for the project gradient */
+.bg-project-gradient {
+  background-image: linear-gradient(90deg, #065f46 0%, #1e3a8a 60%, #ea580c 100%);
+}
+
+.text-project-gradient {
+  background: linear-gradient(90deg, #065f46 0%, #1e3a8a 60%, #ea580c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Reset: Pure White Background */
