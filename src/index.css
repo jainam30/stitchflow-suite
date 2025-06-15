@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -60,22 +61,55 @@ body {
   background: #fff;
 }
 
-/* Sidebar: just white, but keep text color for h1/logo gradient */
-.sidebar {
+.section-gradient {
   background: #fff;
-  color: #222;
+  border-radius: var(--radius);
+  border: 1.5px solid #e5e7eb; /* soft gray border */
 }
 
-/* Keep project name/logo gradient colors (sidebar + header) */
+/* Sidebar: keep it white and text neutral (except project name/logo) */
+.sidebar,
+[data-sidebar="sidebar"] {
+  background: #fff !important;
+  color: #222 !important;
+  box-shadow: none !important;
+}
+
+/* Remove any background color on sidebar menu/buttons, unless active or button-gradient */
+.sidebar [data-sidebar="menu-button"]:not(.button-gradient),
+[data-sidebar="menu-button"]:not(.button-gradient) {
+  background: transparent !important;
+  color: #222 !important;
+}
+
+.sidebar [data-sidebar="menu-button"]:hover:not(.button-gradient),
+[data-sidebar="menu-button"]:hover:not(.button-gradient),
+.sidebar [data-sidebar="menu-button"]:focus-visible:not(.button-gradient),
+[data-sidebar="menu-button"]:focus-visible:not(.button-gradient) {
+  background: #f5f5f5 !important;
+  color: #111 !important;
+}
+
+.sidebar [data-sidebar="menu-button"][data-active="true"]:not(.button-gradient),
+[data-sidebar="menu-button"][data-active="true"]:not(.button-gradient) {
+  background: #f0fdfa !important; /* a subtle mint highlight, optional: you can set to #fff too */
+  color: #0891b2 !important; /* subtle teal for active, or fallback to #222 */
+  font-weight: 500;
+}
+
+.sidebar [data-sidebar="group-label"] {
+  color: #999 !important;
+}
+
+/* Keep project name/logo gradient */
 .sidebar h1,
 .sidebar .logo {
   background: linear-gradient(90deg, #14b8a6 60%, #2dd4bf 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-/* If header project name selector differs, it will keep inheriting previous style as well. */
 
-/* Logo box gradient & border for visual focus (keep as accent) */
+/* Project logo box keeps gradient border/visual focus */
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -129,22 +163,14 @@ body {
   animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
 }
 
-/* Section/Container: make plain and bordered */
-.section-gradient {
-  background: #fff;
-  border-radius: var(--radius);
-  border: 1.5px solid #e5e7eb; /* soft gray border */
-}
-
 /* Buttons: keep gradient for ".button-gradient" only */
 .button-gradient {
   background: linear-gradient(90deg, #14b8a6, #34d399, #f472b6, #2dd4bf, #a78bfa, #22d3ee);
   background-size: 350% 350%;
   animation: vibrant-gradient-move 8s ease-in-out infinite alternate;
-  color: white;
+  color: white !important;
 }
 
-/* Transition helper, keep as is */
 .theme-transition {
   transition: background 0.4s, color 0.2s;
 }
@@ -163,3 +189,4 @@ body {
     background-position: 100% 50%;
   }
 }
+
