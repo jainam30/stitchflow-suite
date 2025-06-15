@@ -49,15 +49,18 @@ export default function Index() {
           draggable={false}
         />
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 via-black/40 to-accent/50 opacity-80" />
-        <header className="relative z-10 container mx-auto px-4 pt-8 pb-2 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md p-2 rounded-xl shadow-lg">
-            <span className="bg-primary/20 rounded-full p-3">
-              <Home size={32} className="text-primary" />
+        <header className="relative z-10 container mx-auto px-2 sm:px-4 pt-8 pb-2 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+          <div className="flex items-center gap-2 sm:gap-3 bg-white/80 backdrop-blur-md p-2 sm:p-3 rounded-xl shadow-lg w-full max-w-xs sm:max-w-none">
+            <span className="bg-primary/20 rounded-full p-2 sm:p-3">
+              <Home size={24} className="sm:hidden text-primary" />
+              <Home size={32} className="hidden sm:inline text-primary" />
             </span>
-            <span className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-secondary to-accent text-transparent bg-clip-text drop-shadow-2xl">StitchFlow Suite</span>
+            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-secondary to-accent text-transparent bg-clip-text drop-shadow-2xl">
+              StitchFlow Suite
+            </span>
           </div>
           {/* Only the Login button remains in the nav */}
-          <nav className="flex gap-2 bg-white/30 backdrop-blur-md p-2 rounded-xl shadow">
+          <nav className="flex gap-2 bg-white/30 backdrop-blur-md p-2 rounded-xl shadow w-full sm:w-auto justify-center sm:justify-start mt-3 md:mt-0">
             <Button variant="default" onClick={() => navigate("/login")}>
               <LogIn className="mr-2" size={18} />
               Login
@@ -65,10 +68,10 @@ export default function Index() {
           </nav>
         </header>
         <div className="relative z-10 mt-10 flex flex-col items-center justify-center w-full">
-          <h1 className="text-white text-4xl md:text-5xl font-extrabold tracking-tight text-center drop-shadow-xl mb-5 animate-fade-in [--animation-delay:250ms] max-w-3xl">
+          <h1 className="text-white text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-center drop-shadow-xl mb-5 animate-fade-in [--animation-delay:250ms] max-w-3xl">
             {COMPANY_MOTTO}
           </h1>
-          <p className="text-lg md:text-xl font-medium text-white/90 text-center max-w-xl bg-black/40 rounded-lg px-4 py-2 mb-2 shadow-lg animate-fade-in [--animation-delay:400ms]">
+          <p className="text-base sm:text-lg md:text-xl font-medium text-white/90 text-center max-w-xl bg-black/40 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 mb-2 shadow-lg animate-fade-in [--animation-delay:400ms]">
             StitchFlow Suite delivers technology-driven solutions for seamless clothing production, delivering efficiency and reliability from design to delivery.
           </p>
           {/* Removed Request a Quotation button from the hero section */}
