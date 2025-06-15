@@ -1,4 +1,7 @@
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Remove default Vite styling to allow our custom styles to work better */
 #root {
@@ -31,4 +34,3 @@
 .animate-move-horizontal {
   animation: move-horizontal 1.2s linear infinite alternate;
 }
-
