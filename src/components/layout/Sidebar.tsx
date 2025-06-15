@@ -46,7 +46,7 @@ const Sidebar: React.FC = () => {
               <Scissors size={22} />
             </div>
             <div className="space-y-1">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-[#065f46] via-[#1e3a8a] to-[#ea580c] bg-clip-text text-transparent">
                 StitchFlow Suite
               </h1>
               <p className="text-xs text-muted-foreground">Seamless ERP Management</p>

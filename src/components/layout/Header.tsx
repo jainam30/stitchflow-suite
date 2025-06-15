@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
@@ -25,7 +24,7 @@ const Header: React.FC = () => {
               <Scissors size={22} />
             </span>
             <h1
-              className="text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent font-sans leading-tight"
+              className="text-xl font-bold bg-gradient-to-r from-[#065f46] via-[#1e3a8a] to-[#ea580c] bg-clip-text text-transparent font-sans leading-tight"
               style={{
                 margin: 0,
               }}
@@ -105,4 +104,3 @@ const Header: React.FC = () => {
 };
 
 export default Header;
-
