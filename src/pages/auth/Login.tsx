@@ -103,14 +103,6 @@ const Login = () => {
             </CardFooter>
           </form>
         </Card>
-        
-        <div className="mt-8 text-center text-sm space-y-2 animate-fade-in [--animation-delay:200ms]">
-          <p className="text-gray-600 font-medium">Demo Credentials:</p>
-          <div className="space-y-1 text-gray-500">
-            <p>Admin: admin@mohil.com / admin123</p>
-            <p>Supervisor: supervisor@mohil.com / supervisor123</p>
-          </div>
-        </div>
       </div>
     </div>
   );
