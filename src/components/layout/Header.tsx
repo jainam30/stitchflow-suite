@@ -16,8 +16,8 @@ const Header: React.FC = () => {
   const { user, logout } = useAuth();
 
   return (
-    <header className="bg-white border-b h-16 flex items-center justify-between px-4">
-      <div className="flex items-center gap-4">
+    <header className="bg-white border-b h-16 flex items-center justify-between px-2 sm:px-4 md:px-6 w-full">
+      <div className="flex items-center gap-2 sm:gap-4">
         <SidebarTrigger />
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-2">
@@ -25,7 +25,7 @@ const Header: React.FC = () => {
               <Scissors size={22} />
             </span>
             <h1
-              className="text-xl font-bold bg-gradient-to-r from-[#065f46] via-[#1e3a8a] to-[#ea580c] bg-clip-text text-transparent font-sans leading-tight"
+              className="text-[1.2rem] sm:text-xl font-bold bg-gradient-to-r from-[#065f46] via-[#1e3a8a] to-[#ea580c] bg-clip-text text-transparent font-sans leading-tight"
               style={{
                 margin: 0,
               }}
@@ -33,17 +33,17 @@ const Header: React.FC = () => {
               StitchFlow Suite
             </h1>
           </div>
-          <span className="text-xs text-muted-foreground">ERP Management</span>
+          <span className="text-[0.62rem] sm:text-xs text-muted-foreground">ERP Management</span>
         </div>
       </div>
       
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 className={`
-                  flex items-center gap-2 px-3 py-1.5 rounded-md
+                  flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-md
                   bg-white border border-gray-200
                   text-gray-800 font-semibold
                   hover:bg-gray-50
@@ -67,7 +67,7 @@ const Header: React.FC = () => {
                 </span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-44 sm:w-56 z-50">
               <ScrollArea className="max-h-64">
                 <DropdownMenuItem asChild>
                   <Link
