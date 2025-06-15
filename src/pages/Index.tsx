@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { home, mail, phone, quote, login } from "lucide-react";
+import { Home, Mail, Phone, LogIn, FileText } from "lucide-react";
 
 const COMPANY_MOTTO = "Empowering Businesses Through Seamless Garment Production Solutions!";
 const HOW_WE_WORK = [
@@ -42,7 +42,7 @@ export default function Index() {
       <header className="container mx-auto px-4 pt-8 pb-4 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3">
           <span className="bg-primary/10 rounded-full p-3">
-            {React.createElement(home, { size: 32, className: "text-primary" })}
+            <Home size={32} className="text-primary" />
           </span>
           <span className="text-3xl font-bold tracking-tight text-primary">
             Mohil Enterprise
@@ -51,7 +51,7 @@ export default function Index() {
         <nav className="flex gap-2">
           <Button variant="ghost" onClick={() => navigate("/")}>Home</Button>
           <Button variant="default" onClick={() => navigate("/login")}>
-            <login className="mr-2" size={18} />
+            <LogIn className="mr-2" size={18} />
             Login
           </Button>
         </nav>
@@ -81,13 +81,16 @@ export default function Index() {
             <h3 className="text-2xl font-semibold mb-2 text-center text-primary">For Customers</h3>
             <div className="flex flex-col gap-3 mt-4">
               <Button variant="secondary" className="w-full" onClick={() => setOpenQuery(true)}>
-                <mail className="mr-2"/> Submit Query
+                <Mail className="mr-2"/>
+                Submit Query
               </Button>
               <Button variant="outline" className="w-full" onClick={() => setOpenQuote(true)}>
-                <quote className="mr-2"/> Request Quotation
+                <FileText className="mr-2"/>
+                Request Quotation
               </Button>
               <Button variant="default" className="w-full" onClick={() => setOpenOrder(true)}>
-                <phone className="mr-2"/> Order Now
+                <Phone className="mr-2"/>
+                Order Now
               </Button>
               <div className="mt-4 text-xs text-muted-foreground text-center">
                 Have a question or project? Reach out directly!
@@ -157,3 +160,4 @@ export default function Index() {
     </div>
   );
 }
+
