@@ -42,8 +42,8 @@ const Sidebar: React.FC = () => {
       <SidebarContent>
         <div className="px-3 py-4">
           <div className="flex items-center gap-3 px-2">
-            <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground p-2.5 rounded-lg shadow-lg">
-              <Scissors size={22} className="animate-[spin_3s_ease-in-out_1]" />
+            <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground p-2.5 rounded-lg shadow-lg animate-move-horizontal">
+              <Scissors size={22} />
             </div>
             <div className="space-y-1">
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
