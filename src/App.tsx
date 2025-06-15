@@ -49,7 +49,65 @@ const App = () => (
               <Route path="settings" element={<Settings />} />
               <Route path="salary" element={<Salary />} />
             </Route>
-            
+
+            {/* Allow direct top-level access (for sidebar) */}
+            <Route
+              path="/employees"
+              element={
+                <AppLayout>
+                  <Employees />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/workers"
+              element={
+                <AppLayout>
+                  <Workers />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/products"
+              element={
+                <AppLayout>
+                  <Products />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/production"
+              element={
+                <AppLayout>
+                  <Production />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <AppLayout>
+                  <Reports />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <AppLayout>
+                  <Settings />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/salary"
+              element={
+                <AppLayout>
+                  <Salary />
+                </AppLayout>
+              }
+            />
+
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -60,3 +118,4 @@ const App = () => (
 );
 
 export default App;
+
