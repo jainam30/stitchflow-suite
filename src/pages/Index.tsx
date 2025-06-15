@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -72,14 +71,7 @@ export default function Index() {
           <p className="text-lg md:text-xl font-medium text-white/90 text-center max-w-xl bg-black/40 rounded-lg px-4 py-2 mb-2 shadow-lg animate-fade-in [--animation-delay:400ms]">
             StitchFlow Suite delivers technology-driven solutions for seamless clothing production, delivering efficiency and reliability from design to delivery.
           </p>
-          <Button
-            variant="secondary"
-            size="lg"
-            className="mt-6 px-8 py-4 text-lg shadow-lg hover:scale-105 transition-all animate-scale-in"
-            onClick={() => setOpenQuote(true)}
-          >
-            <FileText className="mr-2" />Request a Quotation
-          </Button>
+          {/* Removed Request a Quotation button from the hero section */}
         </div>
       </section>
 
