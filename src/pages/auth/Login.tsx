@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, LogIn } from 'lucide-react';
+import { FileText, LogIn, ArrowLeft } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -30,6 +30,16 @@ const Login = () => {
       </div>
 
       <div className="relative z-10 w-full max-w-md px-4">
+        {/* Back to Home Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-3 flex items-center gap-2 text-muted-foreground hover:text-primary"
+          onClick={() => navigate('/')}
+        >
+          <ArrowLeft size={18} />
+          Home
+        </Button>
         <div className="text-center mb-8 animate-fade-in">
           <div className="inline-block p-4 bg-primary rounded-2xl mb-3 shadow-xl hover:shadow-primary/25 transition-shadow">
             <FileText size={36} className="text-white animate-scale-in" />
