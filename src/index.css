@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -97,8 +96,9 @@ body {
   font-weight: 500;
 }
 
-.sidebar [data-sidebar="group-label"] {
-  color: #999 !important;
+.sidebar [data-sidebar="group-label"],
+[data-sidebar="group-label"] {
+  color: #333 !important;
 }
 
 /* Keep project name/logo gradient */
@@ -189,4 +189,3 @@ body {
     background-position: 100% 50%;
   }
 }
-
