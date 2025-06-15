@@ -44,10 +44,10 @@ const Header: React.FC = () => {
               <button
                 className={`
                   flex items-center gap-2 px-3 py-1.5 rounded-md
-                  bg-gradient-to-r from-[#0fb981] via-[#3b82f6] to-[#fbbf24]
-                  text-white font-semibold border border-transparent
-                  hover:from-[#34e5a6] hover:via-[#60a5fa] hover:to-[#fde68a]
-                  focus:outline-none focus:ring-2 focus:ring-[#60a5fa]/40
+                  bg-white border border-gray-200
+                  text-gray-800 font-semibold
+                  hover:bg-gray-50
+                  focus:outline-none focus:ring-2 focus:ring-[#0fb981]/20
                   transition-all duration-200
                   group
                   shadow-sm
@@ -55,14 +55,14 @@ const Header: React.FC = () => {
                 `}
                 style={{
                   minHeight: "32px",
-                  fontSize: "0.875rem", // 14px
+                  fontSize: "0.875rem",
                 }}
               >
-                <span className="flex items-center justify-center bg-white/20 rounded-full p-1">
-                  <User size={17} className="text-white drop-shadow group-hover:text-white" />
+                <span className="flex items-center justify-center rounded-full p-1 bg-transparent">
+                  <User size={17} className="text-green-600 drop-shadow" />
                 </span>
                 <span className="font-bold drop-shadow">{user.name}</span>
-                <span className="ml-2 text-xs bg-white/40 text-white rounded px-2 py-0.5 capitalize font-semibold">
+                <span className="ml-2 text-xs bg-gray-100 text-green-700 rounded px-2 py-0.5 capitalize font-semibold">
                   {user.role}
                 </span>
               </button>
