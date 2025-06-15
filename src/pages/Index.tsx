@@ -49,7 +49,7 @@ export default function Index() {
           draggable={false}
         />
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 via-black/40 to-accent/50 opacity-80" />
-        <header className="relative z-10 container mx-auto px-2 sm:px-4 pt-8 pb-2 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+        <header className="relative z-20 container mx-auto px-2 sm:px-4 pt-8 pb-2 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
           <div className="flex items-center gap-2 sm:gap-3 bg-white/80 backdrop-blur-md p-2 sm:p-3 rounded-xl shadow-lg w-full max-w-xs sm:max-w-none">
             <span className="bg-primary/20 rounded-full p-2 sm:p-3">
               <Home size={24} className="sm:hidden text-primary" />
@@ -79,7 +79,12 @@ export default function Index() {
       </section>
 
       {/* How We Work */}
-      <section className="container mx-auto px-4 mt-[-65px] md:mt-[-90px] mb-8 relative z-20">
+      <section className="container mx-auto px-4 mt-6 md:mt-[-90px] mb-8 relative z-10">
+        {/* 
+          Changed mobile margin-top to positive spacing (mt-6).
+          On md and above, keep the negative margin for visual overlap.
+          Lowered z-index from 20 to 10 to not overlap the hero card.
+        */}
         <div className="rounded-3xl bg-white/70 backdrop-blur-lg shadow-xl p-8 pt-14 md:p-12 border-2 border-primary/10">
           <h2 className="text-3xl md:text-4xl font-bold mb-7 text-center bg-gradient-to-r from-primary via-secondary to-accent text-transparent bg-clip-text animate-fade-in">
             How We Work
