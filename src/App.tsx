@@ -20,6 +20,7 @@ import Production from "./pages/Production";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Salary from "./pages/Salary";
+import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
@@ -31,13 +32,15 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public homepage */}
+            <Route path="/" element={<Index />} />
+
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             
             {/* Protected routes */}
-            <Route path="/" element={<AppLayout />}>
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<AppLayout />}>
+              <Route index element={<Dashboard />} />
               <Route path="employees" element={<Employees />} />
               <Route path="workers" element={<Workers />} />
               <Route path="products" element={<Products />} />
