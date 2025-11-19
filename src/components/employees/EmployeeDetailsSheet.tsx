@@ -1,6 +1,13 @@
-
-import React, { useState, useEffect } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
+// src/components/employees/EmployeeDetailsSheet.tsx
+import React, { useEffect, useState } from 'react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,25 +15,27 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { Employee, EmployeeFormData } from "@/types/employee";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Upload, FileImage, FileText } from "lucide-react";
+import { Check, X, FileImage, FileText } from "lucide-react";
 
 interface EmployeeDetailsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   employee: Employee | null;
   onUpdateEmployee: (id: string, updatedEmployee: Partial<Employee>) => void;
+  readOnly?: boolean; // <-- new optional prop
 }
 
 export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
   open,
   onOpenChange,
   employee,
-  onUpdateEmployee
+  onUpdateEmployee,
+  readOnly = false,
 }) => {
   const { toast } = useToast();
   const [idProofPreview, setIdProofPreview] = useState<string | null>(null);
   const [bankImagePreview, setBankImagePreview] = useState<string | null>(null);
-  
+
   const form = useForm<EmployeeFormData>({
     defaultValues: {
       name: '',
@@ -41,104 +50,125 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
       bankAccountDetail: '',
       bankImage: null,
       salary: 0,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
+  // Reset form whenever employee changes
   useEffect(() => {
-    if (employee) {
-      form.reset({
-        name: employee.name,
-        employeeId: employee.employeeId,
-        address: employee.address,
-        permanentAddress: employee.permanentAddress || '',
-        currentAddress: employee.currentAddress || '',
-        mobileNumber: employee.mobileNumber,
-        emergencyNumber: employee.emergencyNumber,
-        idProof: employee.idProof,
-        bankAccountDetail: employee.bankAccountDetail,
-        salary: employee.salary,
-        isActive: employee.isActive
-      });
+    if (!employee) return;
 
-      // Set image previews if available
-      if (employee.idProofImageUrl) {
-        setIdProofPreview(employee.idProofImageUrl);
-      }
-      
-      if (employee.bankImageUrl) {
-        setBankImagePreview(employee.bankImageUrl);
-      }
-    }
+    form.reset({
+      name: employee.name || '',
+      employeeId: (employee.employeeId as string) || '',
+      address: (employee.address as string) || '',
+      permanentAddress: (employee.permanentAddress as string) || '',
+      currentAddress: (employee.currentAddress as string) || '',
+      mobileNumber: (employee.mobileNumber as string) || '',
+      emergencyNumber: (employee.emergencyNumber as string) || '',
+      idProof: (employee.idProof as string) || '',
+      idProofImage: null,
+      bankAccountDetail: (employee.bankAccountDetail as string) || '',
+      bankImage: null,
+      salary: (employee.salary as any) || 0,
+      isActive: (employee as any).isActive ?? true,
+    });
+
+    // populate previews from DB URLs when available
+    // Accept both old camelCase and new snake_case keys just in case
+    const idProofUrl = (employee as any).idProofImageUrl || (employee as any).id_proof_image_url || (employee as any).id_proof_image_url;
+    const bankUrl = (employee as any).bankImageUrl || (employee as any).bank_image_url || (employee as any).bank_image_url;
+    const profileUrl = (employee as any).profileImageUrl || (employee as any).profile_image_url || (employee as any).profile_image_url;
+
+    if (idProofUrl) setIdProofPreview(idProofUrl);
+    else setIdProofPreview(null);
+
+    if (bankUrl) setBankImagePreview(bankUrl);
+    else setBankImagePreview(null);
+
+    // no need to use profile preview here (UI shows profile image elsewhere)
   }, [employee, form]);
 
   const onSubmit = async (data: EmployeeFormData) => {
     if (!employee) return;
+    if (readOnly) return; // guard: do nothing in read-only mode
 
-    // In a real app, you would upload files to a server here
-    // For now, we'll simulate that the upload was successful
-    
-    const updatedEmployee: Partial<Employee> = {
-      name: data.name,
-      employeeId: data.employeeId,
-      address: data.address,
-      permanentAddress: data.permanentAddress,
-      currentAddress: data.currentAddress,
-      mobileNumber: data.mobileNumber,
-      emergencyNumber: data.emergencyNumber,
-      idProof: data.idProof,
-      bankAccountDetail: data.bankAccountDetail,
-      salary: data.salary,
-      isActive: data.isActive
-    };
+    try {
+      const updatedEmployee: Partial<Employee> = {
+        name: data.name,
+        employeeId: data.employeeId,
+        address: data.address,
+        permanentAddress: data.permanentAddress,
+        currentAddress: data.currentAddress,
+        mobileNumber: data.mobileNumber,
+        emergencyNumber: data.emergencyNumber,
+        idProof: data.idProof,
+        bankAccountDetail: data.bankAccountDetail,
+        // salary/isActive handled below
+      };
 
-    // Simulate file upload for idProofImage
-    if (data.idProofImage) {
-      // In a real app, this would be a URL returned from your file upload service
-      updatedEmployee.idProofImageUrl = URL.createObjectURL(data.idProofImage);
+      // update salary/isActive if present in form
+      (updatedEmployee as any).salary = data.salary;
+      (updatedEmployee as any).isActive = data.isActive;
+
+      // If user selected new images in the form, normally you'd upload them
+      // to storage and set the returned URLs here. For now we simulate with
+      // object URLs so the UI updates immediately (matches your existing logic).
+      if (data.idProofImage) {
+        (updatedEmployee as any).idProofImageUrl = URL.createObjectURL(data.idProofImage);
+      }
+      if (data.bankImage) {
+        (updatedEmployee as any).bankImageUrl = URL.createObjectURL(data.bankImage);
+      }
+
+      onUpdateEmployee(employee.id, updatedEmployee);
+
+      toast({
+        title: "Employee updated",
+        description: `${data.name}'s information has been updated.`,
+      });
+
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error("Error updating employee:", err);
+      toast({
+        title: "Error",
+        description: err?.message || "Failed to update employee",
+        variant: "destructive",
+      });
     }
-
-    // Simulate file upload for bankImage
-    if (data.bankImage) {
-      // In a real app, this would be a URL returned from your file upload service
-      updatedEmployee.bankImageUrl = URL.createObjectURL(data.bankImage);
-    }
-
-    onUpdateEmployee(employee.id, updatedEmployee);
-    
-    toast({
-      title: "Employee updated",
-      description: `${data.name}'s information has been updated.`,
-    });
-    
-    onOpenChange(false);
   };
 
+  // file change handlers — they set value in react-hook-form and update preview.
   const handleIdProofImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (readOnly) return;
     const file = e.target.files?.[0];
-    if (file) {
-      form.setValue("idProofImage", file);
-      setIdProofPreview(URL.createObjectURL(file));
-    }
+    if (!file) return;
+    form.setValue("idProofImage", file);
+    setIdProofPreview(URL.createObjectURL(file));
   };
 
   const handleBankImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (readOnly) return;
     const file = e.target.files?.[0];
-    if (file) {
-      form.setValue("bankImage", file);
-      setBankImagePreview(URL.createObjectURL(file));
-    }
+    if (!file) return;
+    form.setValue("bankImage", file);
+    setBankImagePreview(URL.createObjectURL(file));
   };
 
+  // If no employee selected, render nothing (same as before)
   if (!employee) return null;
+
+  // helper that will disable interactions if readOnly is true
+  const disabled = Boolean(readOnly);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-md md:max-w-lg overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Edit Employee: {employee.name}</SheetTitle>
+          <SheetTitle>{readOnly ? `View Employee: ${employee.name}` : `Edit Employee: ${employee.name}`}</SheetTitle>
           <SheetDescription>
-            View and update employee information. Click save when you're done.
+            {readOnly ? "Viewing employee details." : "View and update employee information. Click save when you're done."}
           </SheetDescription>
         </SheetHeader>
 
@@ -156,7 +186,7 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                       <FormItem>
                         <FormLabel>Name</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} disabled={disabled} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -169,7 +199,7 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                       <FormItem>
                         <FormLabel>Employee ID</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} disabled={disabled} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -189,7 +219,7 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                       <FormItem>
                         <FormLabel>Mobile Number</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} disabled={disabled} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -202,7 +232,7 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                       <FormItem>
                         <FormLabel>Emergency Contact</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} disabled={disabled} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -222,7 +252,7 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                       <FormItem>
                         <FormLabel>Address</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} disabled={disabled} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -235,7 +265,7 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                       <FormItem>
                         <FormLabel>Permanent Address</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} disabled={disabled} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -248,7 +278,7 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                       <FormItem>
                         <FormLabel>Current Address</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} disabled={disabled} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -267,28 +297,27 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                     <FormItem>
                       <FormLabel>ID Number</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} disabled={disabled} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="mt-4">
                   <Label htmlFor="id-proof-image">ID Proof Image</Label>
                   <div className="mt-1 flex items-center">
-                    <Label 
-                      htmlFor="id-proof-image" 
-                      className="cursor-pointer flex items-center justify-center border border-dashed rounded-md p-4 w-full"
+                    <Label
+                      htmlFor="id-proof-image"
+                      className={`cursor-pointer flex items-center justify-center border border-dashed rounded-md p-4 w-full ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
                       {idProofPreview ? (
                         <div className="w-full">
-                          <img 
-                            src={idProofPreview} 
-                            alt="ID Proof" 
+                          <img
+                            src={idProofPreview}
+                            alt="ID Proof"
                             className="h-32 object-contain mx-auto"
                           />
-                          <p className="text-xs text-center mt-2">Click to change</p>
                         </div>
                       ) : (
                         <div className="text-center">
@@ -297,11 +326,12 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                         </div>
                       )}
                     </Label>
-                    <Input 
-                      id="id-proof-image" 
-                      type="file" 
-                      className="hidden" 
+                    <Input
+                      id="id-proof-image"
+                      type="file"
+                      className="hidden"
                       onChange={handleIdProofImageChange}
+                      disabled={disabled}
                     />
                   </div>
                 </div>
@@ -317,28 +347,27 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                     <FormItem>
                       <FormLabel>Bank Account Details</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} disabled={disabled} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="mt-4">
                   <Label htmlFor="bank-image">Bank Passbook/Cheque</Label>
                   <div className="mt-1 flex items-center">
-                    <Label 
-                      htmlFor="bank-image" 
-                      className="cursor-pointer flex items-center justify-center border border-dashed rounded-md p-4 w-full"
+                    <Label
+                      htmlFor="bank-image"
+                      className={`cursor-pointer flex items-center justify-center border border-dashed rounded-md p-4 w-full ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
                       {bankImagePreview ? (
                         <div className="w-full">
-                          <img 
-                            src={bankImagePreview} 
-                            alt="Bank Document" 
+                          <img
+                            src={bankImagePreview}
+                            alt="Bank Document"
                             className="h-32 object-contain mx-auto"
                           />
-                          <p className="text-xs text-center mt-2">Click to change</p>
                         </div>
                       ) : (
                         <div className="text-center">
@@ -347,11 +376,12 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                         </div>
                       )}
                     </Label>
-                    <Input 
-                      id="bank-image" 
-                      type="file" 
-                      className="hidden" 
+                    <Input
+                      id="bank-image"
+                      type="file"
+                      className="hidden"
                       onChange={handleBankImageChange}
+                      disabled={disabled}
                     />
                   </div>
                 </div>
@@ -368,10 +398,11 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                       <FormItem>
                         <FormLabel>Salary (₹)</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            {...field} 
-                            onChange={e => field.onChange(Number(e.target.value))} 
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={e => field.onChange(Number(e.target.value))}
+                            disabled={disabled}
                           />
                         </FormControl>
                         <FormMessage />
@@ -384,11 +415,12 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-end space-x-2">
                         <FormControl>
-                          <input 
-                            type="checkbox" 
-                            checked={field.value} 
+                          <input
+                            type="checkbox"
+                            checked={field.value}
                             onChange={field.onChange}
                             className="h-4 w-4"
+                            disabled={disabled}
                           />
                         </FormControl>
                         <FormLabel>Active Status</FormLabel>
@@ -409,10 +441,14 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                 <X className="mr-1 h-4 w-4" />
                 Cancel
               </Button>
-              <Button type="submit">
-                <Check className="mr-1 h-4 w-4" />
-                Save Changes
-              </Button>
+
+              {/* only show save when not read-only */}
+              {!readOnly && (
+                <Button type="submit">
+                  <Check className="mr-1 h-4 w-4" />
+                  Save Changes
+                </Button>
+              )}
             </SheetFooter>
           </form>
         </Form>

@@ -1,3 +1,4 @@
+// EmployeeTable.tsx
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +24,13 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   const { toast } = useToast();
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
-  
+
+  // ⭐ NEW: readOnly flag
+  const [readOnly, setReadOnly] = useState(false);
+
   const handleToggle = (employee: Employee) => {
     onToggleStatus(employee.id);
-    
+
     toast({
       title: `Employee status updated`,
       description: `${employee.name} is now ${!employee.isActive ? 'active' : 'inactive'}`,
@@ -34,13 +38,17 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
     });
   };
 
-  const handleEditClick = (employee: Employee) => {
+  // ⭐ View (READ ONLY)
+  const handleViewClick = (employee: Employee) => {
     setSelectedEmployee(employee);
+    setReadOnly(true);      // VIEW = READ ONLY
     setIsDetailsSheetOpen(true);
   };
 
-  const handleViewClick = (employee: Employee) => {
+  // ⭐ Edit (EDITABLE)
+  const handleEditClick = (employee: Employee) => {
     setSelectedEmployee(employee);
+    setReadOnly(false);     // EDIT = NOT READ ONLY
     setIsDetailsSheetOpen(true);
   };
 
@@ -71,23 +79,20 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
 
           <TableBody>
             {employees.map((employee) => {
-
-              // FIX DATE SAFELY
               const createdAt = employee.created_at
                 ? new Date(employee.created_at)
                 : null;
 
-              const createdAtLabel = createdAt && !isNaN(createdAt as any)
-                ? formatDistanceToNow(createdAt, { addSuffix: true })
-                : "—";
+              const createdAtLabel =
+                createdAt && !isNaN(createdAt as any)
+                  ? formatDistanceToNow(createdAt, { addSuffix: true })
+                  : "—";
 
               return (
                 <TableRow key={employee.id}>
                   <TableCell className="font-medium">{employee.employeeId}</TableCell>
                   <TableCell>{employee.name}</TableCell>
                   <TableCell>{employee.mobileNumber}</TableCell>
-
-                  {/* FIX salary number errors */}
                   <TableCell>₹{Number(employee.salary || 0).toLocaleString()}</TableCell>
 
                   <TableCell>
@@ -102,29 +107,29 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                     </div>
                   </TableCell>
 
-                  {/* FIX Invalid Time Value */}
                   <TableCell>{createdAtLabel}</TableCell>
 
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="icon" title="View Details" onClick={() => handleViewClick(employee)}>
+                      {/* ⭐ VIEW BUTTON (READ ONLY) */}
+                      <Button variant="outline" size="icon" title="View"
+                        onClick={() => handleViewClick(employee)}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
 
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        title="Edit Employee"
+                      {/* ⭐ EDIT BUTTON */}
+                      <Button variant="outline" size="icon" title="Edit"
                         onClick={() => handleEditClick(employee)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
 
+                      {/* ACTIVE / INACTIVE */}
                       <Button 
                         variant={employee.isActive ? "outline" : "default"} 
                         size="icon"
                         onClick={() => handleToggle(employee)}
-                        title={employee.isActive ? "Deactivate Employee" : "Activate Employee"}
                       >
                         {employee.isActive ? 
                           <UserX className="h-4 w-4" /> : 
@@ -145,6 +150,8 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
         onOpenChange={setIsDetailsSheetOpen}
         employee={selectedEmployee}
         onUpdateEmployee={onUpdateEmployee}
+
+        readOnly={readOnly}  // ⭐ IMPORTANT
       />
     </>
   );

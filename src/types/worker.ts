@@ -1,5 +1,6 @@
 
 export interface Worker {
+  worker_code: string;
   id: string;
   name: string;
   workerId: string;
@@ -17,7 +18,6 @@ export interface Worker {
   accountHolderName?: string;
   bankImageUrl: string;
   profileImageUrl?: string;
-  addressProofImageUrl?: string;
   createdBy: string;
   createdAt: Date;
 }
@@ -31,14 +31,17 @@ export interface WorkerFormData {
   mobileNumber: string;
   emergencyNumber: string;
   idProof: string;
-  idProofImage: File | null;
+
+  // MUST BE FileList, not File
+  id_proof_image_url: FileList | null;
+  bank_image_url: FileList | null;
+  profile_image_url: FileList | null;
+
   bankAccountDetail: string;
   bankName: string;
   accountNumber: string;
   confirmAccountNumber: string;
   ifscCode: string;
   accountHolderName: string;
-  bankImage: File | null;
-  profileImage: File | null;
-  addressProofImage: File | null;
 }
+

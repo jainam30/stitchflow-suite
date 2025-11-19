@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+// src/components/workers/WorkerTable.tsx
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -16,22 +16,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Clipboard, Edit, MoreVertical, Eye } from "lucide-react";
-import { WorkerDetailsSheet } from './WorkerDetailsSheet';
-import { WorkerOperationsDialog } from './WorkerOperationsDialog';
-import { EditWorkerDialog } from './EditWorkerDialog';
-import { Worker } from '@/types/worker';
-import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { Worker } from "@/types/worker";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { WorkerDetailsSheet } from "./WorkerDetailsSheet";
+import { WorkerOperationsDialog } from "./WorkerOperationsDialog";
+import { EditWorkerDialog } from "./EditWorkerDialog";
 
 interface WorkerTableProps {
   workers: Worker[];
   onUpdateWorker: (id: string, updatedWorker: Partial<Worker>) => void;
 }
 
-export const WorkerTable: React.FC<WorkerTableProps> = ({ 
-  workers,
-  onUpdateWorker
-}) => {
+export const WorkerTable: React.FC<WorkerTableProps> = ({ workers, onUpdateWorker }) => {
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isOperationsOpen, setIsOperationsOpen] = useState(false);
@@ -40,6 +37,7 @@ export const WorkerTable: React.FC<WorkerTableProps> = ({
   const handleOpenDetails = (worker: Worker) => {
     setSelectedWorker(worker);
     setIsDetailsOpen(true);
+    console.log("WORKER DETAILS OBJECT:", worker);
   };
 
   const handleOpenOperations = (worker: Worker) => {
@@ -66,6 +64,7 @@ export const WorkerTable: React.FC<WorkerTableProps> = ({
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
+
         <TableBody>
           {workers.length === 0 ? (
             <TableRow>
@@ -74,67 +73,63 @@ export const WorkerTable: React.FC<WorkerTableProps> = ({
               </TableCell>
             </TableRow>
           ) : (
-            workers.map((worker) => (
-              <TableRow key={worker.id}>
-                <TableCell className="font-medium">{worker.name}</TableCell>
-                <TableCell>{worker.workerId}</TableCell>
-                <TableCell>{worker.mobileNumber}</TableCell>
-                <TableCell className="truncate max-w-[200px]">{worker.address}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="capitalize">
-                    {worker.createdBy}
-                  </Badge>
-                </TableCell>
-                <TableCell>{format(worker.createdAt, 'dd/MM/yyyy')}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleOpenDetails(worker)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleOpenOperations(worker)}>
-                        <Clipboard className="mr-2 h-4 w-4" />
-                        View Operations
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleOpenEdit(worker)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit Worker
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))
+            workers.map((worker) => {
+              const createdAt = worker.createdAt ? new Date(worker.createdAt) : null;
+              const createdLabel = createdAt && !isNaN(createdAt.getTime())
+                ? format(createdAt, "dd/MM/yyyy")
+                : "—";
+
+              return (
+                <TableRow key={worker.id}>
+                  <TableCell className="font-medium">{worker.name}</TableCell>
+                  <TableCell>{worker.workerId}</TableCell>
+                  <TableCell>{worker.mobileNumber}</TableCell>
+                  <TableCell className="truncate max-w-[200px]">{worker.address}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="capitalize">{worker.createdBy}</Badge>
+                  </TableCell>
+                  <TableCell>{createdLabel}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleOpenDetails(worker)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenOperations(worker)}>
+                          <Clipboard className="mr-2 h-4 w-4" />
+                          View Operations
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenEdit(worker)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit Worker
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>
-      
+
       {selectedWorker && (
         <>
-          <WorkerDetailsSheet 
-            worker={selectedWorker}
-            open={isDetailsOpen}
-            onOpenChange={setIsDetailsOpen}
-          />
+          <WorkerDetailsSheet worker={selectedWorker} open={isDetailsOpen} onOpenChange={setIsDetailsOpen} />
           <WorkerOperationsDialog
             workerId={selectedWorker.id}
             workerName={selectedWorker.name}
             open={isOperationsOpen}
             onOpenChange={setIsOperationsOpen}
           />
-          <EditWorkerDialog
-            open={isEditOpen}
-            onOpenChange={setIsEditOpen}
-            worker={selectedWorker}
-            onUpdate={onUpdateWorker}
-          />
+          <EditWorkerDialog open={isEditOpen} onOpenChange={setIsEditOpen} worker={selectedWorker} onUpdate={onUpdateWorker} />
         </>
       )}
     </>

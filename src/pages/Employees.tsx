@@ -14,6 +14,8 @@ const Employees: React.FC = () => {
 
   const queryClient = useQueryClient();
 
+  
+
   // Fetch REAL employees from Supabase
   const { data: employees = [], isLoading, error } = useQuery({
     queryKey: ["employees"],
@@ -53,9 +55,27 @@ const Employees: React.FC = () => {
 
   // Edit employee
   const handleUpdateEmployee = async (id: string, updatedEmployee: any) => {
-    await updateEmployee(id, updatedEmployee);
-    queryClient.invalidateQueries({ queryKey: ["employees"] });
+  // Convert camelCase → snake_case
+  const payload = {
+    name: updatedEmployee.name,
+    employee_code: updatedEmployee.employeeId,
+    address: updatedEmployee.address,
+    permanent_address: updatedEmployee.permanentAddress,
+    current_address: updatedEmployee.currentAddress,
+    mobile_number: updatedEmployee.mobileNumber,
+    emergency_number: updatedEmployee.emergencyNumber,
+    id_proof: updatedEmployee.idProof,
+    id_proof_image_url: updatedEmployee.idProofImageUrl,
+    bank_account_detail: updatedEmployee.bankAccountDetail,
+    bank_image_url: updatedEmployee.bankImageUrl,
+    salary_amount: updatedEmployee.salary,
+    is_active: updatedEmployee.isActive,
   };
+
+  await updateEmployee(id, payload);
+  queryClient.invalidateQueries({ queryKey: ["employees"] });
+};
+
 
   // Search
   const filteredEmployees = mappedEmployees.filter((employee: any) =>

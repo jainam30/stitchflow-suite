@@ -1,84 +1,89 @@
-
-import React, { useState } from 'react';
+// src/pages/Workers.tsx
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AddWorkerDialog } from "@/components/workers/AddWorkerDialog";
 import { WorkerTable } from "@/components/workers/WorkerTable";
-import { Worker } from '@/types/worker';
-import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
-
-// Mock data for initial development
-const mockWorkers: Worker[] = [
-  {
-    id: '1',
-    name: 'Ramesh Kumar',
-    workerId: 'WOR001',
-    address: '123 Worker Colony, City',
-    permanentAddress: '123 Worker Colony, City',
-    currentAddress: '123 Worker Colony, City',
-    mobileNumber: '8765432109',
-    emergencyNumber: '9876543210',
-    idProof: 'AADHAR1122334455',
-    bankAccountDetail: 'BANK9988776655',
-    bankName: 'State Bank of India',
-    accountNumber: '12345678901',
-    ifscCode: 'SBIN0001234',
-    accountHolderName: 'Ramesh Kumar',
-    bankImageUrl: '/placeholder.svg',
-    profileImageUrl: '/placeholder.svg',
-    addressProofImageUrl: '/placeholder.svg',
-    createdBy: 'supervisor',
-    createdAt: new Date('2023-01-10')
-  },
-  {
-    id: '2',
-    name: 'Suresh Singh',
-    workerId: 'WOR002',
-    address: '456 Worker Housing, Town',
-    permanentAddress: '456 Hometown, Village',
-    currentAddress: '456 Worker Housing, Town',
-    mobileNumber: '7654321098',
-    emergencyNumber: '8765432109',
-    idProof: 'AADHAR5566778899',
-    bankAccountDetail: 'BANK1122334455',
-    bankName: 'ICICI Bank',
-    accountNumber: '98765432109',
-    ifscCode: 'ICIC0001234',
-    accountHolderName: 'Suresh Singh',
-    bankImageUrl: '/placeholder.svg',
-    profileImageUrl: '/placeholder.svg',
-    createdBy: 'admin',
-    createdAt: new Date('2023-02-15')
-  }
-];
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getWorkers, updateWorker as svcUpdateWorker, insertWorker } from "@/Services/workerService";
+import { Worker } from "@/types/worker";
+import { useAuth } from "@/contexts/AuthContext";
+import { Navigate } from "react-router-dom";
 
 const Workers: React.FC = () => {
   const { user } = useAuth();
-  const [workers, setWorkers] = useState<Worker[]>(mockWorkers);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  // Ensure this page is only accessible to admin and supervisor roles
-  if (user?.role !== 'admin' && user?.role !== 'supervisor') {
+  const queryClient = useQueryClient();
+
+  // Redirect if not admin/supervisor
+  if (user?.role !== "admin" && user?.role !== "supervisor") {
     return <Navigate to="/dashboard" />;
   }
 
-  const handleAddWorker = (newWorker: Worker) => {
-    setWorkers([...workers, newWorker]);
+  const { data: workersRaw = [], isLoading, error } = useQuery({
+    queryKey: ["workers"],
+    queryFn: getWorkers,
+  });
+
+  // Map DB -> UI-friendly Worker interface (camelCase)
+  const mappedWorkers: Worker[] = (workersRaw as any[]).map((w) => ({
+    id: w.id,
+    name: w.name,
+    workerId: w.worker_code,
+    address: w.address,
+    permanentAddress: w.permanent_address,
+    currentAddress: w.current_address,
+    mobileNumber: w.mobile_number,
+    emergencyNumber: w.emergency_number,
+    idProof: w.id_proof,
+    idProofImageUrl: w.id_proof_image_url ?? "",
+    bankAccountDetail: w.bank_account_detail ?? "",
+    bankName: w.bank_name ?? "",
+    accountNumber: w.account_number ?? "",
+    ifscCode: w.ifsc_code ?? "",
+    accountHolderName: w.account_holder_name ?? "",
+    bankImageUrl: w.bank_image_url ?? "",
+    profileImageUrl: w.profile_image_url ?? "",
+    // removed addressProofImageUrl (not in DB)
+    createdBy: (w.created_by as string) ?? "",
+    createdAt: w.created_at ? new Date(w.created_at) : new Date(), // fallback to now
+  }));
+
+  // Add worker: called after AddWorkerDialog completes insert
+  const handleAfterAdd = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["workers"] });
   };
 
-  const handleUpdateWorker = (id: string, updatedWorker: Partial<Worker>) => {
-    setWorkers(workers.map(worker => 
-      worker.id === id ? { ...worker, ...updatedWorker } : worker
-    ));
+  const handleUpdateWorker = async (id: string, updates: Partial<Worker>) => {
+    // Map updates back to DB column names
+    const dbUpdates: any = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.address !== undefined) dbUpdates.address = updates.address;
+    if (updates.permanentAddress !== undefined) dbUpdates.permanent_address = updates.permanentAddress;
+    if (updates.currentAddress !== undefined) dbUpdates.current_address = updates.currentAddress;
+    if (updates.mobileNumber !== undefined) dbUpdates.mobile_number = updates.mobileNumber;
+    if (updates.emergencyNumber !== undefined) dbUpdates.emergency_number = updates.emergencyNumber;
+    if (updates.bankAccountDetail !== undefined) dbUpdates.bank_account_detail = updates.bankAccountDetail;
+    if (updates.bankName !== undefined) dbUpdates.bank_name = updates.bankName;
+    if (updates.accountNumber !== undefined) dbUpdates.account_number = updates.accountNumber;
+    if (updates.ifscCode !== undefined) dbUpdates.ifsc_code = updates.ifscCode;
+    if (updates.accountHolderName !== undefined) dbUpdates.account_holder_name = updates.accountHolderName;
+    if (updates.profileImageUrl !== undefined) dbUpdates.profile_image_url = updates.profileImageUrl;
+    if (updates.idProofImageUrl !== undefined) dbUpdates.id_proof_image_url = updates.idProofImageUrl;
+    if (updates.bankImageUrl !== undefined) dbUpdates.bank_image_url = updates.bankImageUrl;
+    // any other mapping as needed
+
+    await svcUpdateWorker(id, dbUpdates);
+    await queryClient.invalidateQueries({ queryKey: ["workers"] });
   };
 
-  const filteredWorkers = workers.filter(worker => 
-    worker.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    worker.workerId.toLowerCase().includes(searchTerm.toLowerCase())
+  const filtered = mappedWorkers.filter((w) =>
+    w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (w.workerId ?? "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -94,9 +99,7 @@ const Workers: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle>Worker Management</CardTitle>
-          <CardDescription>
-            View, add, and manage all your production workers here.
-          </CardDescription>
+          <CardDescription>View, add and manage all workers.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-6">
@@ -111,17 +114,22 @@ const Workers: React.FC = () => {
             </div>
           </div>
 
-          <WorkerTable 
-            workers={filteredWorkers} 
-            onUpdateWorker={handleUpdateWorker}
-          />
+          {isLoading && <p>Loading workers...</p>}
+          {error && <p>Error loading workers.</p>}
+
+          {!isLoading && !error && (
+            <WorkerTable workers={filtered} onUpdateWorker={handleUpdateWorker} />
+          )}
         </CardContent>
       </Card>
 
-      <AddWorkerDialog 
-        open={isAddDialogOpen} 
+      <AddWorkerDialog
+        open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        onAddWorker={handleAddWorker}
+        onAddWorker={async () => {
+          setIsAddDialogOpen(false);
+          await handleAfterAdd();
+        }}
       />
     </div>
   );

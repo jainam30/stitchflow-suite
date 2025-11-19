@@ -31,10 +31,28 @@ export const getEmployees = async () => {
 };
 
 export const toggleEmployeeStatus = async (id: string) => {
-  const { data, error } = await supabase.rpc("toggle_employee_status", { emp_id: id });
+  // Get current status
+  const { data: employee, error: fetchError } = await supabase
+    .from("employees")
+    .select("is_active")
+    .eq("id", id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const newStatus = !employee.is_active;
+
+  // Update to the opposite status
+  const { data, error } = await supabase
+    .from("employees")
+    .update({ is_active: newStatus })
+    .eq("id", id);
+
   if (error) throw error;
   return data;
 };
+
+
 
 export const updateEmployee = async (id: string, updates: any) => {
   const { data, error } = await supabase

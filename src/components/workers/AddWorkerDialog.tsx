@@ -1,8 +1,8 @@
+// src/components/workers/AddWorkerDialog.tsx
 
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { v4 as uuidv4 } from 'uuid';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { FileImage, Upload, Banknote, User } from "lucide-react";
 
@@ -14,16 +14,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Worker, WorkerFormData } from '@/types/worker';
+
+import { WorkerFormData } from "@/types/worker";
+import { uploadWorkerImage, insertWorker } from "@/Services/workerService";
 
 interface AddWorkerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddWorker: (worker: Worker) => void;
+  onAddWorker: () => Promise<void>;
 }
 
 export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
@@ -34,27 +37,6 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const defaultValues: WorkerFormData = {
-    name: '',
-    workerId: '',
-    address: '',
-    permanentAddress: '',
-    currentAddress: '',
-    mobileNumber: '',
-    emergencyNumber: '',
-    idProof: '',
-    idProofImage: null,
-    bankAccountDetail: '',
-    bankName: '',
-    accountNumber: '',
-    confirmAccountNumber: '',
-    ifscCode: '',
-    accountHolderName: '',
-    bankImage: null,
-    profileImage: null,
-    addressProofImage: null,
-  };
 
   const {
     register,
@@ -62,17 +44,36 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
     formState: { errors },
     reset,
     watch,
-  } = useForm<WorkerFormData>({ defaultValues });
+    setValue,       // ✅ FIX: get setValue from react-hook-form
+  } = useForm<WorkerFormData>({
+    defaultValues: {
+      name: "",
+      workerId: "",
+      address: "",
+      permanentAddress: "",
+      currentAddress: "",
+      mobileNumber: "",
+      emergencyNumber: "",
+      idProof: "",
+      profile_image_url: null,
+      id_proof_image_url: null,
+      bank_image_url: null,
+      bankAccountDetail: "",
+      bankName: "",
+      accountNumber: "",
+      confirmAccountNumber: "",
+      ifscCode: "",
+      accountHolderName: "",
+    },
+  });
 
-  const accountNumber = watch('accountNumber');
-  const confirmAccountNumber = watch('confirmAccountNumber');
+  const accountNumber = watch("accountNumber");
 
   const onSubmit = async (data: WorkerFormData) => {
-    // Check if account numbers match
     if (data.accountNumber !== data.confirmAccountNumber) {
       toast({
         title: "Error",
-        description: "Account number and confirmation do not match",
+        description: "Account numbers do not match",
         variant: "destructive",
       });
       return;
@@ -81,51 +82,58 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
     setIsSubmitting(true);
 
     try {
-      // In a real app, this would upload images and save data to a backend
-      // For now we'll simulate it with a delay and mock urls
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // ✅ SAFE FILE EXTRACTION
+      const profileFile = data.profile_image_url?.[0] ?? null;
+      const idProofFile = data.id_proof_image_url?.[0] ?? null;
+      const bankFile = data.bank_image_url?.[0] ?? null;
 
-      // Create a new worker object
-      const newWorker: Worker = {
-        id: uuidv4(),
+      // ✅ Upload to Supabase
+      const profileUrl = await uploadWorkerImage("workers/profile", profileFile);
+      const idProofUrl = await uploadWorkerImage("workers/id-proof", idProofFile);
+      const bankUrl = await uploadWorkerImage("workers/bank", bankFile);
+
+      // Worker code
+      const workerCode = `WOR-${Date.now()}`;
+
+      const row = {
         name: data.name,
-        workerId: data.workerId,
+        worker_code: workerCode,
+        mobile_number: data.mobileNumber,
+        emergency_number: data.emergencyNumber,
         address: data.address,
-        permanentAddress: data.permanentAddress,
-        currentAddress: data.currentAddress,
-        mobileNumber: data.mobileNumber,
-        emergencyNumber: data.emergencyNumber,
-        idProof: data.idProof,
-        idProofImageUrl: data.idProofImage ? '/placeholder.svg' : undefined,
-        bankAccountDetail: data.bankAccountDetail,
-        bankName: data.bankName,
-        accountNumber: data.accountNumber,
-        ifscCode: data.ifscCode,
-        accountHolderName: data.accountHolderName,
-        bankImageUrl: data.bankImage ? '/placeholder.svg' : '/placeholder.svg',
-        profileImageUrl: data.profileImage ? '/placeholder.svg' : undefined,
-        addressProofImageUrl: data.addressProofImage ? '/placeholder.svg' : undefined,
-        createdBy: user?.email || 'unknown',
-        createdAt: new Date(),
+        permanent_address: data.permanentAddress,
+        current_address: data.currentAddress,
+        id_proof: data.idProof,
+        id_proof_image_url: idProofUrl,
+        bank_account_detail: data.bankAccountDetail,
+        bank_name: data.bankName,
+        account_number: data.accountNumber,
+        ifsc_code: data.ifscCode,
+        account_holder_name: data.accountHolderName,
+        bank_image_url: bankUrl,
+        profile_image_url: profileUrl,
+        joining_date: null,
+        skill_type: null,
+        supervisor_employee_id: null,
+        salary_id: null,
+        created_at: new Date().toISOString(),
       };
 
-      // Add the new worker
-      onAddWorker(newWorker);
+      await insertWorker(row);
 
-      // Reset form and close dialog
-      reset();
-      onOpenChange(false);
-
-      // Show success message
       toast({
         title: "Worker added",
-        description: `Worker ${data.name} has been added successfully.`,
+        description: `${data.name} added successfully.`,
       });
-    } catch (error) {
-      console.error("Error adding worker:", error);
+
+      reset();
+      onOpenChange(false);
+      await onAddWorker();
+    } catch (err: any) {
+      console.error("Error adding worker:", err);
       toast({
         title: "Error",
-        description: "Failed to add worker. Please try again.",
+        description: err?.message ?? "Failed to add worker",
         variant: "destructive",
       });
     } finally {
@@ -142,253 +150,139 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
             Enter worker details below. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 py-4">
-          <Tabs defaultValue="basic" className="w-full">
+          <Tabs defaultValue="basic">
             <TabsList className="grid grid-cols-3 mb-6">
               <TabsTrigger value="basic">
                 <User className="mr-2 h-4 w-4" />
                 Basic Info
               </TabsTrigger>
+
               <TabsTrigger value="documents">
                 <FileImage className="mr-2 h-4 w-4" />
                 Documents
               </TabsTrigger>
+
               <TabsTrigger value="bank">
                 <Banknote className="mr-2 h-4 w-4" />
                 Bank Details
               </TabsTrigger>
             </TabsList>
-            
+
+            {/* BASIC INFO */}
             <TabsContent value="basic" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="profileImage">Profile Photo</Label>
-                <div className="flex items-center space-x-4">
-                  <div className="w-24 h-24 border rounded-full flex items-center justify-center bg-muted">
-                    <Upload className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <Input
-                    id="profileImage"
-                    type="file"
-                    accept="image/*"
-                    {...register("profileImage")}
-                  />
-                </div>
+                <Label>Profile Photo</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setValue("profile_image_url", e.target.files)}
+                />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name *</Label>
-                  <Input
-                    id="name"
-                    {...register("name", { required: "Worker name is required" })}
-                    placeholder="Full Name"
-                    className={errors.name ? "border-destructive" : ""}
-                  />
-                  {errors.name && (
-                    <p className="text-sm text-destructive">{errors.name.message}</p>
-                  )}
+                <div>
+                  <Label>Full Name *</Label>
+                  <Input placeholder="Ex: Ramesh Patel"{...register("name", { required: true })} />
+                  <p className="text-xs text-muted-foreground mt-1">Enter worker's full legal name</p>
+
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="workerId">Worker ID *</Label>
-                  <Input
-                    id="workerId"
-                    {...register("workerId", { required: "Worker ID is required" })}
-                    placeholder="E.g. WOR001"
-                    className={errors.workerId ? "border-destructive" : ""}
-                  />
-                  {errors.workerId && (
-                    <p className="text-sm text-destructive">{errors.workerId.message}</p>
-                  )}
+
+                <div>
+                  <Label>Mobile Number *</Label>
+                  <Input placeholder="9876543210" {...register("mobileNumber", { required: true })} />
+                  <p className="text-xs text-muted-foreground mt-1">10-digit phone number</p>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="mobileNumber">Mobile Number *</Label>
-                  <Input
-                    id="mobileNumber"
-                    {...register("mobileNumber", { required: "Mobile number is required" })}
-                    placeholder="10-digit mobile number"
-                    className={errors.mobileNumber ? "border-destructive" : ""}
-                  />
-                  {errors.mobileNumber && (
-                    <p className="text-sm text-destructive">{errors.mobileNumber.message}</p>
-                  )}
+
+                <div className="md:col-span-2">
+                  <Label>Current Address *</Label>
+                  <Input placeholder="Full current living address"{...register("currentAddress", { required: true })} />
+
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="emergencyNumber">Emergency Contact</Label>
-                  <Input
-                    id="emergencyNumber"
-                    {...register("emergencyNumber")}
-                    placeholder="Emergency contact number"
-                  />
+
+                <div className="md:col-span-2">
+                  <Label>Permanent Address *</Label>
+                  <Input placeholder="Permanent home address"{...register("permanentAddress", { required: true })} />
                 </div>
-                
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="currentAddress">Current Address *</Label>
-                  <Input
-                    id="currentAddress"
-                    {...register("currentAddress", { required: "Current address is required" })}
-                    placeholder="Current address"
-                    className={errors.currentAddress ? "border-destructive" : ""}
-                  />
-                  {errors.currentAddress && (
-                    <p className="text-sm text-destructive">{errors.currentAddress.message}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="permanentAddress">Permanent Address *</Label>
-                  <Input
-                    id="permanentAddress"
-                    {...register("permanentAddress", { required: "Permanent address is required" })}
-                    placeholder="Permanent address"
-                    className={errors.permanentAddress ? "border-destructive" : ""}
-                  />
-                  {errors.permanentAddress && (
-                    <p className="text-sm text-destructive">{errors.permanentAddress.message}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="address">Alternate Address</Label>
-                  <Input
-                    id="address"
-                    {...register("address")}
-                    placeholder="Alternate address (if any)"
-                  />
+
+                <div className="md:col-span-2">
+                  <Label>Alternate Address</Label>
+                  <Input placeholder="Optional"{...register("address")} />
                 </div>
               </div>
             </TabsContent>
-            
+
+            {/* DOCUMENTS */}
             <TabsContent value="documents" className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="idProof">ID Proof Number *</Label>
-                <Input
-                  id="idProof"
-                  {...register("idProof", { required: "ID proof is required" })}
-                  placeholder="Aadhar/PAN/Voter ID"
-                  className={errors.idProof ? "border-destructive" : ""}
-                />
-                {errors.idProof && (
-                  <p className="text-sm text-destructive">{errors.idProof.message}</p>
-                )}
+              <div>
+                <Label>ID Proof Number *</Label>
+                <Input placeholder="Aadhar / PAN / Voter ID Number"{...register("idProof", { required: true })} />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="idProofImage">ID Proof Document</Label>
+
+              <div>
+                <Label>ID Proof Document</Label>
                 <Input
-                  id="idProofImage"
                   type="file"
                   accept="image/*"
-                  {...register("idProofImage")}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="addressProofImage">Address Proof Document</Label>
-                <Input
-                  id="addressProofImage"
-                  type="file"
-                  accept="image/*"
-                  {...register("addressProofImage")}
+                  onChange={(e) =>
+                    setValue("id_proof_image_url", e.target.files)
+                  }
                 />
               </div>
             </TabsContent>
-            
+
+            {/* BANK DETAILS */}
             <TabsContent value="bank" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bankName">Bank Name *</Label>
-                  <Input
-                    id="bankName"
-                    {...register("bankName", { required: "Bank name is required" })}
-                    placeholder="Bank name"
-                    className={errors.bankName ? "border-destructive" : ""}
-                  />
-                  {errors.bankName && (
-                    <p className="text-sm text-destructive">{errors.bankName.message}</p>
-                  )}
+                <div>
+                  <Label>Bank Name *</Label>
+                  <Input placeholder="Ex: SBI, HDFC"{...register("bankName", { required: true })} />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="accountNumber">Account Number *</Label>
-                  <Input
-                    id="accountNumber"
-                    {...register("accountNumber", { required: "Account number is required" })}
-                    placeholder="Account number"
-                    className={errors.accountNumber ? "border-destructive" : ""}
-                  />
-                  {errors.accountNumber && (
-                    <p className="text-sm text-destructive">{errors.accountNumber.message}</p>
-                  )}
+
+                <div>
+                  <Label>Account Number *</Label>
+                  <Input placeholder="Bank account number"{...register("accountNumber", { required: true })} />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="confirmAccountNumber">Confirm Account Number *</Label>
-                  <Input
-                    id="confirmAccountNumber"
-                    {...register("confirmAccountNumber", { 
-                      required: "Please confirm account number",
-                      validate: value => value === accountNumber || "Account numbers do not match"
-                    })}
-                    placeholder="Confirm account number"
-                    className={errors.confirmAccountNumber ? "border-destructive" : ""}
-                  />
-                  {errors.confirmAccountNumber && (
-                    <p className="text-sm text-destructive">{errors.confirmAccountNumber.message}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="ifscCode">IFSC Code *</Label>
-                  <Input
-                    id="ifscCode"
-                    {...register("ifscCode", { required: "IFSC code is required" })}
-                    placeholder="IFSC code"
-                    className={errors.ifscCode ? "border-destructive" : ""}
-                  />
-                  {errors.ifscCode && (
-                    <p className="text-sm text-destructive">{errors.ifscCode.message}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="accountHolderName">Account Holder Name *</Label>
-                  <Input
-                    id="accountHolderName"
-                    {...register("accountHolderName", { required: "Account holder name is required" })}
-                    placeholder="Account holder name"
-                    className={errors.accountHolderName ? "border-destructive" : ""}
-                  />
-                  {errors.accountHolderName && (
-                    <p className="text-sm text-destructive">{errors.accountHolderName.message}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="bankAccountDetail">Other Bank Details</Label>
-                  <Input
-                    id="bankAccountDetail"
-                    {...register("bankAccountDetail")}
-                    placeholder="Any other bank details"
+
+                <div>
+                  <Label>Confirm Account Number *</Label>
+                  <Input placeholder="Re-enter account number"
+                    {...register("confirmAccountNumber", { required: true })}
                   />
                 </div>
-                
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="bankImage">Bank Document</Label>
+
+                <div>
+                  <Label>IFSC Code *</Label>
+                  <Input placeholder="Ex: SBIN0001234"{...register("ifscCode", { required: true })} />
+                </div>
+
+                <div>
+                  <Label>Account Holder Name *</Label>
+                  <Input placeholder="Name as per bank account"
+                    {...register("accountHolderName", { required: true })}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label>Other Bank Details</Label>
+                  <Input placeholder="(Optional) Branch, notes, etc" {...register("bankAccountDetail")} />
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label>Bank Document</Label>
                   <Input
-                    id="bankImage"
                     type="file"
                     accept="image/*"
-                    {...register("bankImage")}
+                    onChange={(e) =>
+                      setValue("bank_image_url", e.target.files)
+                    }
                   />
                 </div>
               </div>
             </TabsContent>
           </Tabs>
-          
+
           <DialogFooter>
             <Button
               type="button"
@@ -400,6 +294,7 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
             >
               Cancel
             </Button>
+
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Saving..." : "Save Worker"}
             </Button>
@@ -409,3 +304,4 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
     </Dialog>
   );
 };
+
