@@ -1,40 +1,48 @@
-
+// src/types/product.ts
 export interface Operation {
   id: string;
   name: string;
-  operationId: string;
-  amountPerPiece: number;
-  productId: string;
+  operation_code: string;
+  amount_per_piece: number;
+  product_id: string;
+  created_at?: string | Date;
 }
 
 export interface Product {
   id: string;
   name: string;
-  productId: string;
-  designNo: string;
+  product_code: string;
+  design_no: string;
   color: string;
-  patternImageUrl: string;
-  materialCost: number;
-  threadCost: number;
-  otherCosts: number;
+  pattern_image_url: string | null;
+  material_cost: number;
+  thread_cost: number;
+  other_costs: number;
+  unit?: string;
   operations: Operation[];
-  createdBy: string;
-  createdAt: Date;
+  created_by?: string | null;
+  created_at?: string | Date;
+  is_active?: boolean;
 }
 
 export interface ProductFormData {
   name: string;
-  productId: string;
-  designNo: string;
+  product_code: string;
+  design_no: string;
   color: string;
   patternImage: File | null;
-  materialCost: number;
-  threadCost: number;
-  otherCosts: number;
+  material_cost: number;
+  thread_cost: number;
+  other_costs: number;
+  operations: {
+    name: string;
+    operation_code: string;
+    amount_per_piece: number;
+  }[];
 }
 
 export interface OperationFormData {
   name: string;
-  operationId: string;
-  amountPerPiece: number;
+  operation_code: string;
+  amount_per_piece: number;
 }

@@ -1,4 +1,4 @@
-
+// src/components/products/ProductTable.tsx
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Product } from '@/types/product';
@@ -8,7 +8,7 @@ import { EditProductSheet } from './EditProductSheet';
 
 interface ProductTableProps {
   products: Product[];
-  onUpdateProduct: (id: string, product: Partial<Product>) => void;
+  onUpdateProduct: (id: string, product: Partial<Product>, operations: any[]) => void;
 }
 
 export const ProductTable: React.FC<ProductTableProps> = ({ products, onUpdateProduct }) => {
@@ -27,7 +27,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onUpdatePr
           <TableHeader>
             <TableRow>
               <TableHead>Product Name</TableHead>
-              <TableHead>Product ID</TableHead>
+              <TableHead>Product Code</TableHead>
               <TableHead>Design No.</TableHead>
               <TableHead>Color</TableHead>
               <TableHead>Total Cost</TableHead>
@@ -38,29 +38,24 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onUpdatePr
           <TableBody>
             {products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  No products found.
-                </TableCell>
+                <TableCell colSpan={7} className="h-24 text-center">No products found.</TableCell>
               </TableRow>
             ) : (
               products.map((product) => {
-                const totalCost = product.materialCost + product.threadCost + product.otherCosts;
+                const totalCost = Number(product.material_cost || 0) + Number(product.thread_cost || 0) + Number(product.other_costs || 0);
                 return (
                   <TableRow key={product.id}>
                     <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.productId}</TableCell>
-                    <TableCell>{product.designNo}</TableCell>
+                    <TableCell>{product.product_code}</TableCell>
+                    <TableCell>{product.design_no}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div 
-                          className="h-4 w-4 rounded-full border" 
-                          style={{ backgroundColor: product.color.toLowerCase() }}
-                        ></div>
+                        <div className="h-4 w-4 rounded-full border" style={{ backgroundColor: product.color.toLowerCase() }} />
                         {product.color}
                       </div>
                     </TableCell>
                     <TableCell>₹{totalCost.toFixed(2)}</TableCell>
-                    <TableCell>{product.operations.length}</TableCell>
+                    <TableCell>{product.operations?.length || 0}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={() => handleEditClick(product)}>
                         <Edit className="h-4 w-4" />

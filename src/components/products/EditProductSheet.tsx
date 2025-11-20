@@ -1,5 +1,5 @@
-
-import React, { useState, useEffect } from 'react';
+// src/components/products/EditProductSheet.tsx
+import React, { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,145 +16,146 @@ interface EditProductSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product: Product | null;
-  onUpdateProduct: (id: string, updatedProduct: Partial<Product>) => void;
+  onUpdateProduct: (id: string, updatedProduct: Partial<Product>, operations: any[]) => void;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 
 const operationSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(1, "Operation name is required"),
-  operationId: z.string().min(1, "Operation ID is required"),
-  amountPerPiece: z.coerce.number().min(0, "Amount must be a positive number"),
-  productId: z.string().optional(),
+  name: z.string(),
+  operation_code: z.string(),
+  amount_per_piece: z.coerce.number(),
+  product_id: z.string().optional(),
 });
 
 const formSchema = z.object({
-  name: z.string().min(3, "Product name must be at least 3 characters"),
-  productId: z.string().min(3, "Product ID must be at least 3 characters"),
-  designNo: z.string().min(3, "Design number must be at least 3 characters"),
-  color: z.string().min(1, "Color is required"),
-  patternImage: z.instanceof(File).optional().refine(
-    (file) => !file || file.size <= MAX_FILE_SIZE,
-    'Max file size is 10MB'
-  ).refine(
-    (file) => !file || ACCEPTED_IMAGE_TYPES.includes(file.type),
-    'Only .jpg, .jpeg, and .png formats are supported'
-  ).nullable().optional(),
-  materialCost: z.coerce.number().min(0, "Material cost must be a positive number"),
-  threadCost: z.coerce.number().min(0, "Thread cost must be a positive number"),
-  otherCosts: z.coerce.number().min(0, "Other costs must be a positive number"),
-  operations: z.array(operationSchema).min(1, "At least one operation is required"),
+  name: z.string(),
+  product_code: z.string(),
+  design_no: z.string(),
+  color: z.string(),
+  patternImage: z.instanceof(File).optional().nullable(),
+  material_cost: z.coerce.number(),
+  thread_cost: z.coerce.number(),
+  other_costs: z.coerce.number(),
+  operations: z.array(operationSchema),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-export const EditProductSheet: React.FC<EditProductSheetProps> = ({
-  open,
-  onOpenChange,
-  product,
-  onUpdateProduct
-}) => {
+export const EditProductSheet: React.FC<EditProductSheetProps> = ({ open, onOpenChange, product, onUpdateProduct }) => {
   const { toast } = useToast();
   const [patternImagePreview, setPatternImagePreview] = useState<string | null>(null);
-  
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      productId: '',
-      designNo: '',
+      product_code: '',
+      design_no: '',
       color: '',
-      materialCost: 0,
-      threadCost: 0,
-      otherCosts: 0,
+      patternImage: null,
+      material_cost: 0,
+      thread_cost: 0,
+      other_costs: 0,
       operations: []
     }
   });
 
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
-    name: "operations",
+    name: "operations"
   });
 
   useEffect(() => {
-    if (product) {
-      form.reset({
-        name: product.name,
-        productId: product.productId,
-        designNo: product.designNo,
-        color: product.color,
-        materialCost: product.materialCost,
-        threadCost: product.threadCost,
-        otherCosts: product.otherCosts,
-        operations: product.operations
-      });
+    if (!product) return;
+    // Populate form with DB fields (snake_case)
+    const ops = (product.operations || []).map(op => ({
+      id: op.id,
+      name: op.name,
+      operation_code: (op as any).operation_code || (op as any).operationId,
+      amount_per_piece: op.amount_per_piece,
+      product_id: op.product_id || product.id
+    }));
 
-      // Set pattern image preview if available
-      if (product.patternImageUrl) {
-        setPatternImagePreview(product.patternImageUrl);
-      }
-    }
-  }, [product, form]);
+    form.reset({
+      name: product.name,
+      product_code: product.product_code,
+      design_no: product.design_no,
+      color: product.color,
+      patternImage: null,
+      material_cost: Number(product.material_cost || 0),
+      thread_cost: Number(product.thread_cost || 0),
+      other_costs: Number(product.other_costs || 0),
+      operations: ops
+    });
+
+    replace(ops);
+    if (product.pattern_image_url) setPatternImagePreview(product.pattern_image_url as string);
+    else setPatternImagePreview(null);
+  }, [product, form, replace]);
 
   const onSubmit = async (data: FormValues) => {
     if (!product) return;
 
-    // In a real app, you would upload files to a server here
-    // For now, we'll simulate that the upload was successful
-    
-    const updatedProduct: Partial<Product> = {
-      name: data.name,
-      productId: data.productId,
-      designNo: data.designNo,
-      color: data.color,
-      materialCost: data.materialCost,
-      threadCost: data.threadCost,
-      otherCosts: data.otherCosts,
-      operations: data.operations as Operation[]
-    };
+    try {
+      const updatedProduct: Partial<Product> = {
+        name: data.name,
+        product_code: data.product_code,
+        design_no: data.design_no,
+        color: data.color,
+        material_cost: data.material_cost,
+        thread_cost: data.thread_cost,
+        other_costs: data.other_costs,
+      };
 
-    // Simulate file upload for patternImage
-    if (data.patternImage) {
-      // In a real app, this would be a URL returned from your file upload service
-      updatedProduct.patternImageUrl = URL.createObjectURL(data.patternImage);
+      if (data.patternImage) {
+        updatedProduct.pattern_image_url = URL.createObjectURL(data.patternImage);
+      }
+
+      // operations array (map to DB shape)
+      const operations = data.operations.map(op => ({
+        id: op.id,
+        name: op.name,
+        operation_code: op.operation_code,
+        amount_per_piece: op.amount_per_piece,
+        product_id: product.id
+      }));
+
+      onUpdateProduct(product.id, updatedProduct, operations);
+
+      toast({
+        title: "Product updated",
+        description: `${data.name} updated.`,
+      });
+
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error("Update product error:", err);
+      toast({
+        title: "Error",
+        description: err?.message || "Failed to update product",
+        variant: "destructive",
+      });
     }
-
-    onUpdateProduct(product.id, updatedProduct);
-    
-    toast({
-      title: "Product updated",
-      description: `${data.name}'s information has been updated.`,
-    });
-    
-    onOpenChange(false);
   };
 
   const handlePatternImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > MAX_FILE_SIZE) {
-        toast({
-          title: "Error",
-          description: "Pattern image must be less than 10MB",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-        toast({
-          title: "Error",
-          description: "Only .jpg, .jpeg, and .png formats are supported",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      form.setValue("patternImage", file);
-      setPatternImagePreview(URL.createObjectURL(file));
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast({ title: "Error", description: "Image must be < 10MB", variant: "destructive" });
+      return;
     }
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      toast({ title: "Error", description: "Only JPG/JPEG/PNG supported", variant: "destructive" });
+      return;
+    }
+
+    form.setValue("patternImage", file);
+    setPatternImagePreview(URL.createObjectURL(file));
   };
 
   if (!product) return null;
@@ -164,285 +165,97 @@ export const EditProductSheet: React.FC<EditProductSheetProps> = ({
       <SheetContent className="sm:max-w-md md:max-w-lg overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Edit Product: {product.name}</SheetTitle>
-          <SheetDescription>
-            View and update product information. Click save when you're done.
-          </SheetDescription>
+          <SheetDescription>View and update product information. Click save when you're done.</SheetDescription>
         </SheetHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
             <div className="space-y-4">
-              {/* Basic Information */}
               <div className="border rounded-md p-4">
                 <h3 className="text-sm font-medium mb-3">Basic Information</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Product Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="productId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Product ID</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="product_code" render={({ field }) => (
+                    <FormItem><FormLabel>Product Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
                 </div>
               </div>
 
-              {/* Design Information */}
               <div className="border rounded-md p-4">
                 <h3 className="text-sm font-medium mb-3">Design Information</h3>
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <FormField
-                    control={form.control}
-                    name="designNo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Design Number</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="color"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Color</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="design_no" render={({ field }) => (
+                    <FormItem><FormLabel>Design Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="color" render={({ field }) => (
+                    <FormItem><FormLabel>Color</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
                 </div>
-                
+
                 <div>
                   <Label>Pattern Image</Label>
                   <div className="mt-1 flex items-center">
-                    <Label 
-                      htmlFor="pattern-image" 
-                      className="cursor-pointer flex items-center justify-center border border-dashed rounded-md p-4 w-full"
-                    >
+                    <label htmlFor="pattern-image" className="cursor-pointer flex items-center justify-center border border-dashed rounded-md p-4 w-full">
                       {patternImagePreview ? (
-                        <div className="w-full">
-                          <img 
-                            src={patternImagePreview} 
-                            alt="Pattern" 
-                            className="h-32 object-contain mx-auto"
-                          />
-                          <p className="text-xs text-center mt-2">Click to change</p>
-                        </div>
+                        <div className="w-full"><img src={patternImagePreview} alt="Pattern" className="h-32 object-contain mx-auto" /><p className="text-xs text-center mt-2">Click to change</p></div>
                       ) : (
-                        <div className="text-center">
-                          <Package className="mx-auto h-12 w-12 text-gray-400" />
-                          <p className="mt-1 text-sm text-gray-500">Upload pattern image</p>
-                          <p className="text-xs text-gray-500">JPG, JPEG, PNG (max 10MB)</p>
-                        </div>
+                        <div className="text-center"><Package className="mx-auto h-12 w-12 text-gray-400" /><p className="mt-1 text-sm text-gray-500">Upload pattern image</p></div>
                       )}
-                    </Label>
-                    <Input 
-                      id="pattern-image" 
-                      type="file" 
-                      className="hidden" 
-                      accept=".jpg,.jpeg,.png"
-                      onChange={handlePatternImageChange}
-                    />
+                    </label>
+                    <Input id="pattern-image" type="file" className="hidden" accept=".jpg,.jpeg,.png" onChange={handlePatternImageChange} />
                   </div>
                 </div>
               </div>
 
-              {/* Cost Information */}
               <div className="border rounded-md p-4">
                 <h3 className="text-sm font-medium mb-3">Cost Information</h3>
                 <div className="grid grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="materialCost"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Material Cost (₹)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            {...field}
-                            onChange={e => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="threadCost"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Thread Cost (₹)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            {...field}
-                            onChange={e => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="otherCosts"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Other Costs (₹)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            {...field}
-                            onChange={e => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="material_cost" render={({ field }) => (
+                    <FormItem><FormLabel>Material Cost (₹)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="thread_cost" render={({ field }) => (
+                    <FormItem><FormLabel>Thread Cost (₹)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="other_costs" render={({ field }) => (
+                    <FormItem><FormLabel>Other Costs (₹)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
                 </div>
               </div>
 
-              {/* Operations */}
               <div className="border rounded-md p-4">
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="text-sm font-medium">Operations</h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => append({ 
-                      id: `new-${Date.now()}`, 
-                      name: "", 
-                      operationId: "", 
-                      amountPerPiece: 0,
-                      productId: product.id
-                    })}
-                  >
-                    <Plus className="mr-1 h-4 w-4" />
-                    Add Operation
+                  <Button type="button" variant="outline" size="sm" onClick={() => append({ id: `new-${Date.now()}`, name: "", operation_code: "", amount_per_piece: 0, product_id: product.id })}>
+                    <Plus className="mr-1 h-4 w-4" /> Add Operation
                   </Button>
                 </div>
-                
+
                 {fields.map((field, index) => (
-                  <div 
-                    key={field.id} 
-                    className="grid grid-cols-[1fr_1fr_auto] gap-3 mb-3 pb-3 border-b last:border-b-0 last:pb-0 last:mb-0"
-                  >
-                    <FormField
-                      control={form.control}
-                      name={`operations.${index}.name`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className={index !== 0 ? "sr-only" : ""}>Operation Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name={`operations.${index}.operationId`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className={index !== 0 ? "sr-only" : ""}>Operation ID</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
+                  <div key={field.id} className="grid grid-cols-[1fr_1fr_auto] gap-3 mb-3 pb-3 border-b last:border-b-0">
+                    <FormField control={form.control} name={`operations.${index}.name`} render={({ field }) => (
+                      <FormItem><FormLabel className={index ? "sr-only" : ""}>Operation Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name={`operations.${index}.operation_code`} render={({ field }) => (
+                      <FormItem><FormLabel className={index ? "sr-only" : ""}>Operation Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
                     <div className="flex items-end gap-2">
-                      <FormField
-                        control={form.control}
-                        name={`operations.${index}.amountPerPiece`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className={index !== 0 ? "sr-only" : ""}>Amount/Piece (₹)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                className="w-20"
-                                {...field}
-                                onChange={e => field.onChange(Number(e.target.value))}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      {fields.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => remove(index)}
-                          className="mb-[2px]"
-                        >
-                          <X className="h-4 w-4" />
-                          <span className="sr-only">Remove operation</span>
-                        </Button>
-                      )}
+                      <FormField control={form.control} name={`operations.${index}.amount_per_piece`} render={({ field }) => (
+                        <FormItem><FormLabel className={index ? "sr-only" : ""}>Amount/Piece (₹)</FormLabel><FormControl><Input type="number" className="w-20" {...field} onChange={e => field.onChange(Number(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="mb-[2px]"><X className="h-4 w-4" /></Button>
                     </div>
-                    
-                    {/* Hidden field for id */}
                     <input type="hidden" {...form.register(`operations.${index}.id`)} />
-                    <input type="hidden" {...form.register(`operations.${index}.productId`)} value={product.id} />
+                    <input type="hidden" {...form.register(`operations.${index}.product_id`)} value={product.id} />
                   </div>
                 ))}
               </div>
             </div>
 
             <SheetFooter className="mt-6 flex justify-between sm:justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                <X className="mr-1 h-4 w-4" />
-                Cancel
-              </Button>
-              <Button type="submit">
-                <Check className="mr-1 h-4 w-4" />
-                Save Changes
-              </Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}><X className="mr-1 h-4 w-4" /> Cancel</Button>
+              <Button type="submit"><Check className="mr-1 h-4 w-4" /> Save Changes</Button>
             </SheetFooter>
           </form>
         </Form>
