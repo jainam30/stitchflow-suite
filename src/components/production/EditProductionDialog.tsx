@@ -69,27 +69,27 @@ export const EditProductionDialog: React.FC<EditProductionDialogProps> = ({
   useEffect(() => {
     if (production) {
       form.reset({
-        productionId: production.productionId || "",
-        poNumber: production.poNumber || "",
+        productionId: production.production_code || "",
+        poNumber: production.po_number || "",
         color: production.color || "",
-        totalFabric: production.totalFabric || 0,
+        totalFabric: production.total_fabric || 0,
         average: production.average || 0,
-        totalQuantity: production.totalQuantity || 0,
+        totalQuantity: production.total_quantity || 0,
       });
     }
   }, [production]);
 
   const onSubmit = (values: any) => {
     if (!production) return;
-
+    // Build updates using snake_case keys expected by the DB/service
     const updated = {
-      ...production,
-      productionId: values.productionId,
-      poNumber: values.poNumber,
+      id: production.id,
+      production_code: values.productionId,
+      po_number: values.poNumber,
       color: values.color,
-      totalFabric: values.totalFabric,
+      total_fabric: values.totalFabric,
       average: values.average,
-      totalQuantity: values.totalQuantity,
+      total_quantity: values.totalQuantity,
     };
 
     onUpdateProduction(updated);

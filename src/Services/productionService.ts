@@ -36,7 +36,24 @@ export const getProductions = async () => {
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return data;
+  const productions = data ?? [];
+
+  // fetch products for mapping product name (avoid N+1 queries)
+  try {
+    const { data: products } = await supabase.from("products").select("id,name");
+    const prodMap: Record<string, string> = {};
+    (products || []).forEach((p: any) => {
+      if (p && p.id) prodMap[p.id] = p.name;
+    });
+
+    return productions.map((p: any) => ({
+      ...p,
+      productName: p.product_id ? prodMap[p.product_id] ?? null : null,
+    }));
+  } catch (err) {
+    // if product fetching fails, return productions without productName
+    return productions;
+  }
 };
 
 
@@ -155,6 +172,21 @@ export const assignWorkerToOperation = async (
     .from("production_operation")
     .update(updates)
     .eq("id", operationRecordId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * Insert a new production_operation row for a production
+ */
+export const insertProductionOperation = async (payload: any) => {
+  // expect snake_case keys matching DB: production_id, operation_id, worker_id, worker_name, pieces_done, earnings, date, created_at
+  const { data, error } = await supabase
+    .from("production_operation")
+    .insert([payload])
     .select()
     .single();
 

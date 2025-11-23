@@ -29,14 +29,12 @@ import {
 import { WorkerSalary, ProductionOperation } from "@/types/salary";
 import { format } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Production, ProductionOperationDetail } from '@/types/production';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { markWorkerSalariesPaid } from '@/Services/salaryService';
+import { Production } from '@/types/production';
 
-// Mock data for workers
-const mockWorkers = [
-  { id: 'WOR001', name: 'Ramesh Kumar' },
-  { id: 'WOR002', name: 'Suresh Singh' },
-  { id: 'WOR003', name: 'Manoj Verma' },
-];
+// Rely on DB-backed `salaries` and optional `workerName` provided on each salary row
 
 interface WorkerSalaryTableProps {
   salaries: WorkerSalary[];
@@ -54,68 +52,7 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
   const [aggregatedSalaries, setAggregatedSalaries] = useState<any[]>([]);
   const isMobile = useIsMobile();
   
-  // Function to generate automatic salaries from production operations
-  const generateSalariesFromProductions = () => {
-    // Skip if no productions available
-    if (!productions || productions.length === 0) return;
-    
-    const generatedSalaries: WorkerSalary[] = [];
-    
-    // For each production, check operations and generate salary records
-    productions.forEach(production => {
-      // Mock worker assignments - in a real app this would come from your database
-      const workerAssignments = [
-        { workerId: 'WOR001', operationIds: ['1-1', '2-2'] },
-        { workerId: 'WOR002', operationIds: ['1-2', '2-1'] },
-        { workerId: 'WOR003', operationIds: ['2-3'] },
-      ];
-      
-      // For each operation in the production
-      production.operations.forEach(operation => {
-        // Find workers assigned to this operation
-        const assignedWorkers = workerAssignments.filter(
-          assignment => assignment.operationIds.includes(operation.id)
-        );
-        
-        assignedWorkers.forEach(worker => {
-          // Calculate pieces done - in a real app you'd have actual tracking data
-          const piecesDone = Math.floor(Math.random() * production.totalQuantity * 0.5) + 1;
-          
-          // Check if salary record already exists for this worker/operation
-          const existingSalary = salaries.find(
-            s => s.workerId === worker.workerId && 
-                 s.operationId === operation.id &&
-                 s.productId === production.id
-          );
-          
-          if (!existingSalary && piecesDone > 0) {
-            // Create new salary record
-            generatedSalaries.push({
-              id: `auto-${Date.now()}-${worker.workerId}-${operation.id}`,
-              workerId: worker.workerId,
-              productId: production.id,
-              date: new Date(),
-              operationId: operation.id,
-              piecesDone: piecesDone,
-              amountPerPiece: operation.ratePerPiece,
-              totalAmount: piecesDone * operation.ratePerPiece,
-              paid: false
-            });
-          }
-        });
-      });
-    });
-    
-    // Add the generated salaries to the existing ones
-    if (generatedSalaries.length > 0) {
-      setSalaries(prevSalaries => [...prevSalaries, ...generatedSalaries]);
-    }
-  };
-  
-  // Call once when component mounts to generate initial salaries
-  useEffect(() => {
-    generateSalariesFromProductions();
-  }, [productions]);
+  // No automatic/mock salary generation here — rely on DB-backed `salaries` prop
   
   // Calculate aggregated salaries by worker when month, year, or salaries change
   useEffect(() => {
@@ -136,10 +73,9 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
     
     filteredSalaries.forEach(salary => {
       if (!workerSalaryMap.has(salary.workerId)) {
-        const worker = mockWorkers.find(w => w.id === salary.workerId);
         workerSalaryMap.set(salary.workerId, {
           workerId: salary.workerId,
-          workerName: worker ? worker.name : 'Unknown Worker',
+          workerName: salary.workerName || 'Unknown Worker',
           totalPieces: 0,
           totalAmount: 0,
           operations: [],
@@ -152,10 +88,8 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
       workerData.totalAmount += salary.totalAmount;
       workerData.paid = workerData.paid && salary.paid;
       
-      const prodName = productions.find(p => p.id === salary.productId)?.name || 'Unknown Product';
-      const opName = productions.find(p => p.id === salary.productId)?.operations.find(
-        o => o.id === salary.operationId
-      )?.name || 'Unknown Operation';
+      const prodName = productions.find(p => p.id === salary.productId)?.productName || 'Unknown Product';
+      const opName = salary.operationName || 'Unknown Operation';
       
       workerData.operations.push({
         productId: salary.productId,
@@ -170,15 +104,61 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
     setAggregatedSalaries(Array.from(workerSalaryMap.values()));
   }, [month, year, salaries, productions]);
   
-  const markAsPaid = (workerId: string) => {
-    setSalaries(prevSalaries => prevSalaries.map(salary => 
-      salary.workerId === workerId && !salary.paid ? { 
-        ...salary, 
-        paid: true,
-        paidDate: new Date(),
-        paidBy: 'admin' // or use the current user's role
-      } : salary
-    ));
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const markAsPaid = async (workerId: string) => {
+    const selectedMonth = parseInt(month);
+    const selectedYear = parseInt(year);
+
+    const idsToMark = salaries
+      .filter(s => s.workerId === workerId)
+      .filter(s => {
+        const d = new Date(s.date);
+        return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear && !s.paid;
+      })
+      .map(s => s.id);
+
+    if (idsToMark.length === 0) {
+      toast({ title: 'Nothing to mark', description: 'No unpaid salary records found for this worker and period.' });
+      return;
+    }
+
+    // If any of the ids or workerId are not UUIDs, treat these as local/mock rows
+    // and update local state only to avoid passing invalid UUIDs to Supabase.
+    const isUuid = (v: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(v);
+    const idsAreUuid = idsToMark.every(id => isUuid(id));
+    const workerIdIsUuid = isUuid(workerId);
+    if (!idsAreUuid || !workerIdIsUuid) {
+      // Local-only update for mock/non-UUID data
+      setSalaries(prevSalaries => prevSalaries.map(salary =>
+        idsToMark.includes(salary.id) ? { ...salary, paid: true, paidDate: new Date(), paidBy: 'local' } : salary
+      ));
+      toast({ title: 'Marked Locally', description: 'Rows updated locally because IDs are not UUIDs; not persisted to DB.' });
+      return;
+    }
+
+    try {
+      const paidBy = user?.id || undefined;
+      const result = await markWorkerSalariesPaid(idsToMark, paidBy as string | undefined, workerId, selectedMonth, selectedYear);
+      const err = (result as any)?.error;
+      if (err) {
+        console.error('Supabase error marking paid:', err);
+        const message = err.message || err.details || JSON.stringify(err);
+        toast({ title: 'Failed to mark salaries as paid', description: message });
+        return;
+      }
+
+      setSalaries(prevSalaries => prevSalaries.map(salary =>
+        idsToMark.includes(salary.id) ? { ...salary, paid: true, paidDate: new Date(), paidBy: paidBy || 'admin' } : salary
+      ));
+
+      toast({ title: 'Marked Paid', description: `${idsToMark.length} salary record(s) marked as paid.` });
+    } catch (err: any) {
+      console.error('Failed to mark salaries paid', err);
+      const message = err?.message || JSON.stringify(err);
+      toast({ title: 'Error', description: message || 'Failed to mark salaries as paid. Please try again.' });
+    }
   };
 
   const handleDeleteSalary = (workerId: string) => {
@@ -235,26 +215,24 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Worker ID</TableHead>
-              <TableHead className={isMobile ? "hidden" : ""}>Worker Name</TableHead>
-              <TableHead className={`${isMobile ? "" : "text-right"}`}>Pieces</TableHead>
-              <TableHead className="text-right">Amount (₹)</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
+                <TableHead>Worker</TableHead>
+                <TableHead className={`${isMobile ? "" : "text-right"}`}>Pieces</TableHead>
+                <TableHead className="text-right">Amount (₹)</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
           </TableHeader>
           <TableBody>
             {aggregatedSalaries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isMobile ? 5 : 6} className="h-24 text-center">
+                <TableCell colSpan={5} className="h-24 text-center">
                   No salary records found for the selected period
                 </TableCell>
               </TableRow>
             ) : (
               aggregatedSalaries.map((workerSalary) => (
                 <TableRow key={workerSalary.workerId}>
-                  <TableCell className="font-medium">{workerSalary.workerId}</TableCell>
-                  {!isMobile && <TableCell>{workerSalary.workerName}</TableCell>}
+                  <TableCell className="font-medium">{workerSalary.workerName}</TableCell>
                   <TableCell className={`${isMobile ? "" : "text-right"}`}>{workerSalary.totalPieces}</TableCell>
                   <TableCell className="text-right font-medium">₹{workerSalary.totalAmount}</TableCell>
                   <TableCell>

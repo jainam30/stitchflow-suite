@@ -28,14 +28,15 @@ export interface ProductionOperation {
 // Main Production Record (Matches DB)
 // ----------------------
 export interface Production {
+  name: string;
   id: string;
   productId: string;
-  productionId: string;        // production_code
-  poNumber: string;
+  production_code: string;        // production_code
+  po_number: string;
   color: string;
-  totalFabric: number;
+  total_fabric: number;
   average: number;
-  totalQuantity: number;
+  total_quantity: number;
   createdBy: string;
   createdAt: Date;
   // UI only (NOT stored in DB)
@@ -59,14 +60,14 @@ export interface OperationMaster {
 // Production Form (Add Production Dialog)
 // ----------------------
 export interface ProductionFormData {
-  prodcutname: string;
+  prodcutName: string;
   productId: string;
   productionId: string;
-  poNumber: string;
+  po_number: string;
   color: string;
-  totalFabric: number;
+  total_fabric: number;
   average: number;
-  totalQuantity: number;
+  total_quantity: number;
 }
 
 // ----------------------

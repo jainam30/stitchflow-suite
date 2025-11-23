@@ -62,13 +62,13 @@ export const AddProductionDialog: React.FC<Props> = ({ open, onOpenChange, produ
         created_at: new Date().toISOString(),
       };
 
-      const created = await createProduction(row);
-      toast({ title: "Production created" });
-      onAddProduction(created);
-      onOpenChange(false);
+      // Pass the prepared row to the parent to perform the insertion.
+      // This avoids calling createProduction twice (once here and once in the parent).
+      onAddProduction(row);
+      // Parent will close the dialog and handle resetting; keep local reset for safety
       form.reset();
     } catch (err: any) {
-      console.error("create production error", err);
+      console.error("prepare production error", err);
       toast({ title: "Error", description: err?.message || String(err), variant: "destructive" });
     }
   };
@@ -120,7 +120,7 @@ export const AddProductionDialog: React.FC<Props> = ({ open, onOpenChange, produ
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <FormField
                 control={form.control}
                 name="poNumber"
@@ -155,6 +155,35 @@ export const AddProductionDialog: React.FC<Props> = ({ open, onOpenChange, produ
                     <FormLabel>Total Quantity</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="totalFabric"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Fabric (mtr.)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="average"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Average (P.O)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

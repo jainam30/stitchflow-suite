@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { WorkerSalary, WorkerSalaryFormData } from '@/types/salary';
+import { getWorkers } from '@/Services/workerService';
 import { useAuth } from '@/contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { Production } from '@/types/production';
@@ -31,14 +32,6 @@ interface AddWorkerSalaryDialogProps {
   productions?: Production[];
 }
 
-// Mock data for workers - This would ideally come from a database
-const mockWorkers = [
-  { id: 'WOR001', name: 'Ramesh Kumar' },
-  { id: 'WOR002', name: 'Suresh Singh' },
-  { id: 'WOR003', name: 'Manoj Verma' },
-  { id: 'WOR004', name: 'Ravi Patel' },
-  { id: 'WOR005', name: 'Amit Sharma' },
-];
 
 export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
   open,
@@ -58,7 +51,8 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
     totalAmount: 0,
   });
   
-  const [selectedWorker, setSelectedWorker] = useState<typeof mockWorkers[0] | null>(null);
+  const [workers, setWorkers] = useState<any[]>([]);
+  const [selectedWorker, setSelectedWorker] = useState<any | null>(null);
   const [selectedOperation, setSelectedOperation] = useState<any | null>(null);
   const [selectedProduction, setSelectedProduction] = useState<Production | null>(null);
   const [availableOperations, setAvailableOperations] = useState<any[]>([]);
@@ -79,10 +73,22 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
       setSelectedProduction(null);
     }
   }, [open]);
+
+  // fetch workers on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const w = await getWorkers();
+        setWorkers(w || []);
+      } catch (err) {
+        console.error('Failed to load workers', err);
+      }
+    })();
+  }, []);
   
   const handleWorkerChange = (value: string) => {
-    const worker = mockWorkers.find(w => w.id === value);
-    
+    const worker = workers.find(w => w.id === value);
+
     if (worker) {
       setSelectedWorker(worker);
       setFormData(prev => ({
@@ -220,7 +226,7 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
                   <SelectValue placeholder="Select worker" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockWorkers.map((worker) => (
+                  {workers.map((worker) => (
                     <SelectItem key={worker.id} value={worker.id}>
                       {worker.name} ({worker.id})
                     </SelectItem>
@@ -314,7 +320,7 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
           
           {selectedProduction && (
             <div className="text-sm text-muted-foreground">
-              <p>Selected Production: {selectedProduction.name} ({selectedProduction.productionId})</p>
+              <p>Selected Production: {selectedProduction.name} ({selectedProduction.productId})</p>
               {selectedOperation && (
                 <p>Operation Rate: ₹{selectedOperation.ratePerPiece} per piece</p>
               )}
