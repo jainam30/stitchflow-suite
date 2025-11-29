@@ -1,4 +1,3 @@
-
 export interface WorkerSalary {
   id: string;
   workerId: string;
@@ -13,19 +12,19 @@ export interface WorkerSalary {
   totalAmount: number;
   paid: boolean;
   paidDate?: Date;
-  paidBy?: string;
 }
 
 export interface EmployeeSalary {
-  id: string;
-  employeeId: string;
-  month: Date;
-  salary: number;
-  advance: number;
-  netSalary: number;
-  paid: boolean;
-  paidDate?: Date;
-  paidBy?: string;
+	id: string;
+	employeeId: string;
+	employeeName?: string | null; // added — service returns employee_name when present
+	month: Date; // parsed Date from salary_month
+	salary: number; // gross_salary mapped to salary
+	advance: number;
+	netSalary: number;
+	paid: boolean;
+	paidDate?: Date;
+	paidBy?: string;
 }
 
 export interface EmployeeAdvance {

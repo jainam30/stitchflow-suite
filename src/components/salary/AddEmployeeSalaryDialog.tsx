@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,79 +25,92 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from '@/contexts/AuthContext';
-import { EmployeeSalary } from '@/types/salary';
-import { v4 as uuidv4 } from 'uuid';
+import { useToast } from '@/hooks/use-toast';
+import { getEmployees, createEmployeeSalary } from "@/Services/salaryService";
+import { useAuth } from "@/contexts/AuthContext";
+import { EmployeeSalary } from "@/types/salary";
+import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/Config/supabaseClient";
 
 interface AddEmployeeSalaryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-// Mock employees data
-const mockEmployees = [
-  { id: '1001', name: 'John Doe', salary: 30000 },
-  { id: '1002', name: 'Jane Smith', salary: 25000 },
-  { id: '1003', name: 'Bob Johnson', salary: 35000 },
-];
-
-export const AddEmployeeSalaryDialog: React.FC<AddEmployeeSalaryDialogProps> = ({
-  open,
-  onOpenChange,
-}) => {
+export const AddEmployeeSalaryDialog: React.FC<
+  AddEmployeeSalaryDialogProps
+> = ({ open, onOpenChange }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(true);
+
   const [formData, setFormData] = useState({
-    employeeId: '',
+    employeeId: "",
     month: new Date(),
     salary: 0,
     advance: 0,
     netSalary: 0,
   });
-  
-  const [selectedEmployee, setSelectedEmployee] = useState<typeof mockEmployees[0] | null>(null);
-  
+
+  // Fetch employees from Supabase
+  useEffect(() => {
+    const loadEmployees = async () => {
+      setLoadingEmployees(true);
+      try {
+        const rows = await getEmployees();
+        setEmployees(rows || []);
+      } catch (err: any) {
+        toast({
+          title: "Error",
+          description: "Failed to load employees.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingEmployees(false);
+      }
+    };
+    loadEmployees();
+  }, [toast]);
+
   const handleEmployeeChange = (value: string) => {
-    const employee = mockEmployees.find(emp => emp.id === value);
-    
+    const employee = employees.find((emp) => emp.id === value);
     if (employee) {
-      setSelectedEmployee(employee);
-      setFormData(prev => ({
+      const base = typeof employee.base_salary === "number" ? employee.base_salary : Number(formData.salary || 0);
+      setFormData((prev) => ({
         ...prev,
         employeeId: value,
-        salary: employee.salary,
-        netSalary: employee.salary - prev.advance,
+        salary: base,
+        netSalary: base - prev.advance,
       }));
     }
   };
-  
+
   const handleMonthChange = (date: Date | undefined) => {
     if (date) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         month: date,
       }));
     }
   };
-  
+
   const handleAdvanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const advance = parseFloat(e.target.value) || 0;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
       advance,
       netSalary: prev.salary - advance,
     }));
   };
-  
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate form
-    if (!formData.employeeId || formData.salary <= 0) {
+
+    if (!formData.employeeId || Number(formData.salary) <= 0) {
       toast({
         title: "Validation Error",
         description: "Please fill all required fields with valid values.",
@@ -106,8 +118,8 @@ export const AddEmployeeSalaryDialog: React.FC<AddEmployeeSalaryDialogProps> = (
       });
       return;
     }
-    
-    // Create new employee salary record
+
+    // Create salary record object
     const newSalary: EmployeeSalary = {
       id: uuidv4(),
       employeeId: formData.employeeId,
@@ -117,27 +129,44 @@ export const AddEmployeeSalaryDialog: React.FC<AddEmployeeSalaryDialogProps> = (
       netSalary: formData.netSalary,
       paid: false,
     };
-    
-    // In a real app, you would save this to a database
-    console.log('New employee salary record:', newSalary);
-    
+
+    // Save via service
+    const res = await createEmployeeSalary({
+      employeeId: newSalary.employeeId,
+      salaryMonth: newSalary.month,
+      grossSalary: newSalary.salary,
+      advance: newSalary.advance,
+      netSalary: newSalary.netSalary,
+      paid: false,
+      employeeName: employees.find(e => e.id === newSalary.employeeId)?.name ?? null,
+    });
+
+    if (res?.error) {
+      toast({
+        title: "Error",
+        description: res.error.message ?? "Failed to add salary",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       title: "Success",
-      description: "Employee salary record has been added successfully.",
+      description: "Employee salary record added successfully.",
     });
-    
-    // Reset form and close dialog
+
+    // Reset form
     setFormData({
-      employeeId: '',
+      employeeId: "",
       month: new Date(),
       salary: 0,
       advance: 0,
       netSalary: 0,
     });
-    setSelectedEmployee(null);
+
     onOpenChange(false);
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -147,34 +176,43 @@ export const AddEmployeeSalaryDialog: React.FC<AddEmployeeSalaryDialogProps> = (
             Create a monthly salary record for an employee.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="grid grid-cols-2 gap-4">
+            {/* EMPLOYEE SELECT */}
             <div className="space-y-2">
-              <Label htmlFor="employee">Employee</Label>
+              <Label>Employee</Label>
+
               <Select
                 value={formData.employeeId}
                 onValueChange={handleEmployeeChange}
               >
-                <SelectTrigger id="employee">
-                  <SelectValue placeholder="Select employee" />
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      loadingEmployees
+                        ? "Loading..."
+                        : "Select employee"
+                    }
+                  />
                 </SelectTrigger>
+
                 <SelectContent>
-                  {mockEmployees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.name} ({employee.id})
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.id})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
+
+            {/* MONTH SELECT */}
             <div className="space-y-2">
-              <Label htmlFor="month">Month</Label>
+              <Label>Month</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
-                    id="month"
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
@@ -182,7 +220,7 @@ export const AddEmployeeSalaryDialog: React.FC<AddEmployeeSalaryDialogProps> = (
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.month ? format(formData.month, "MMMM yyyy") : <span>Select month</span>}
+                    {format(formData.month, "MMMM yyyy")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -196,44 +234,44 @@ export const AddEmployeeSalaryDialog: React.FC<AddEmployeeSalaryDialogProps> = (
               </Popover>
             </div>
           </div>
-          
+
+          {/* SALARY INPUTS */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="salary">Base Salary (₹)</Label>
+              <Label>Base Salary (₹)</Label>
               <Input
-                id="salary"
                 type="number"
-                readOnly
-                value={formData.salary || ''}
-                className="bg-muted"
+                value={formData.salary}
+                onChange={(e) => {
+                  const s = parseFloat(e.target.value) || 0;
+                  setFormData(prev => ({ ...prev, salary: s, netSalary: s - prev.advance }));
+                }}
+                min="0"
+                step="0.01"
               />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="advance">Advance Payment (₹)</Label>
+              <Label>Advance (₹)</Label>
               <Input
-                id="advance"
                 type="number"
                 min="0"
                 step="0.01"
-                placeholder="Enter advance amount"
-                value={formData.advance || ''}
+                value={formData.advance}
                 onChange={handleAdvanceChange}
               />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="netSalary">Net Salary (₹)</Label>
+              <Label>Net Salary (₹)</Label>
               <Input
-                id="netSalary"
-                type="number"
                 readOnly
-                value={formData.netSalary || 0}
+                value={formData.netSalary}
                 className="bg-muted font-medium"
               />
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button type="submit">Add Salary Record</Button>
           </DialogFooter>

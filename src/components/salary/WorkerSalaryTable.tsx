@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -18,7 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, CalendarDays } from "lucide-react";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -34,6 +33,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { markWorkerSalariesPaid } from '@/Services/salaryService';
 import { Production } from '@/types/production';
 
+import WorkerOperationDetailDialog, { OperationDetail } from "@/components/salary/WorkerOPerationDetailDialog";
+import { getWorkerOperations } from "@/Services/salaryService";
 // Rely on DB-backed `salaries` and optional `workerName` provided on each salary row
 
 interface WorkerSalaryTableProps {
@@ -42,23 +43,28 @@ interface WorkerSalaryTableProps {
   productions?: Production[];
 }
 
-export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({ 
-  salaries, 
+
+export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
+  salaries,
   setSalaries,
-  productions = [] 
+  productions = []
 }) => {
   const [month, setMonth] = useState<string>(new Date().getMonth().toString());
   const [year, setYear] = useState<string>(new Date().getFullYear().toString());
   const [aggregatedSalaries, setAggregatedSalaries] = useState<any[]>([]);
   const isMobile = useIsMobile();
-  
+
+  useEffect(() => {
+    console.log("Debug salaries:", salaries);
+  }, [salaries]);
+
   // No automatic/mock salary generation here — rely on DB-backed `salaries` prop
-  
+
   // Calculate aggregated salaries by worker when month, year, or salaries change
   useEffect(() => {
     const selectedMonth = parseInt(month);
     const selectedYear = parseInt(year);
-    
+
     // Filter salaries for selected month and year
     const filteredSalaries = salaries.filter(salary => {
       const salaryDate = new Date(salary.date);
@@ -67,10 +73,10 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
         salaryDate.getFullYear() === selectedYear
       );
     });
-    
+
     // Aggregate by worker
     const workerSalaryMap = new Map();
-    
+
     filteredSalaries.forEach(salary => {
       if (!workerSalaryMap.has(salary.workerId)) {
         workerSalaryMap.set(salary.workerId, {
@@ -82,15 +88,15 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
           paid: true
         });
       }
-      
+
       const workerData = workerSalaryMap.get(salary.workerId);
       workerData.totalPieces += salary.piecesDone;
       workerData.totalAmount += salary.totalAmount;
       workerData.paid = workerData.paid && salary.paid;
-      
+
       const prodName = productions.find(p => p.id === salary.productId)?.productName || 'Unknown Product';
       const opName = salary.operationName || 'Unknown Operation';
-      
+
       workerData.operations.push({
         productId: salary.productId,
         productName: prodName,
@@ -100,67 +106,122 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
         amount: salary.totalAmount
       });
     });
-    
+
     setAggregatedSalaries(Array.from(workerSalaryMap.values()));
   }, [month, year, salaries, productions]);
-  
+
   const { toast } = useToast();
   const { user } = useAuth();
 
   const markAsPaid = async (workerId: string) => {
-    const selectedMonth = parseInt(month);
-    const selectedYear = parseInt(year);
-
-    const idsToMark = salaries
-      .filter(s => s.workerId === workerId)
-      .filter(s => {
-        const d = new Date(s.date);
-        return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear && !s.paid;
-      })
-      .map(s => s.id);
-
-    if (idsToMark.length === 0) {
-      toast({ title: 'Nothing to mark', description: 'No unpaid salary records found for this worker and period.' });
-      return;
-    }
-
-    // If any of the ids or workerId are not UUIDs, treat these as local/mock rows
-    // and update local state only to avoid passing invalid UUIDs to Supabase.
-    const isUuid = (v: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(v);
-    const idsAreUuid = idsToMark.every(id => isUuid(id));
-    const workerIdIsUuid = isUuid(workerId);
-    if (!idsAreUuid || !workerIdIsUuid) {
-      // Local-only update for mock/non-UUID data
-      setSalaries(prevSalaries => prevSalaries.map(salary =>
-        idsToMark.includes(salary.id) ? { ...salary, paid: true, paidDate: new Date(), paidBy: 'local' } : salary
-      ));
-      toast({ title: 'Marked Locally', description: 'Rows updated locally because IDs are not UUIDs; not persisted to DB.' });
-      return;
-    }
-
     try {
-      const paidBy = user?.id || undefined;
-      const result = await markWorkerSalariesPaid(idsToMark, paidBy as string | undefined, workerId, selectedMonth, selectedYear);
-      const err = (result as any)?.error;
-      if (err) {
-        console.error('Supabase error marking paid:', err);
-        const message = err.message || err.details || JSON.stringify(err);
-        toast({ title: 'Failed to mark salaries as paid', description: message });
+      const selectedMonth = parseInt(month);
+      const selectedYear = parseInt(year);
+
+      // UUID checker
+      const isUuid = (v: string) =>
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(v);
+
+      // FIRST define idsToMark (your error was using it BEFORE this line)
+      const idsToMark = salaries
+        .filter((s) => s.workerId === workerId)
+        .filter((s) => {
+          const d = new Date(s.date);
+          return (
+            d.getMonth() === selectedMonth &&
+            d.getFullYear() === selectedYear &&
+            !s.paid
+          );
+        })
+        .map((s) => s.id);
+
+      console.log("DEBUG → idsToMark:", idsToMark);
+
+      if (idsToMark.length === 0) {
+        toast({
+          title: "Nothing to mark",
+          description: "No unpaid salaries found for this worker.",
+        });
         return;
       }
 
-      setSalaries(prevSalaries => prevSalaries.map(salary =>
-        idsToMark.includes(salary.id) ? { ...salary, paid: true, paidDate: new Date(), paidBy: paidBy || 'admin' } : salary
-      ));
+      const validIds = idsToMark.filter((id) => isUuid(id));
 
-      toast({ title: 'Marked Paid', description: `${idsToMark.length} salary record(s) marked as paid.` });
+      console.log("DEBUG → validIds:", validIds);
+
+      if (validIds.length === 0) {
+        toast({
+          title: "UUID Error",
+          description: "No valid salary UUIDs found.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const result = await markWorkerSalariesPaid(validIds);
+
+      if (result.error) {
+        toast({
+          title: "Update Failed",
+          description: result.error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update UI
+      setSalaries((prev) =>
+        prev.map((s) =>
+          validIds.includes(s.id)
+            ? { ...s, paid: true, paidDate: new Date() }
+            : s
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: `${validIds.length} salary records marked as paid.`,
+      });
     } catch (err: any) {
-      console.error('Failed to mark salaries paid', err);
-      const message = err?.message || JSON.stringify(err);
-      toast({ title: 'Error', description: message || 'Failed to mark salaries as paid. Please try again.' });
+      console.error(err);
+      toast({
+        title: "Error",
+        description: err.message || "Something went wrong",
+        variant: "destructive",
+      });
     }
   };
 
+
+  const [detailOpen, setDetailOpen] = useState(false);
+    const [detailLoading, setDetailLoading] = useState(false);
+    const [detailError, setDetailError] = useState<string | null>(null);
+    const [detailOperations, setDetailOperations] = useState<OperationDetail[]>([]);
+    const [detailWorkerName, setDetailWorkerName] = useState<string | undefined>();
+  
+    const openDetails = async (employeeId: string) => {
+      setDetailError(null);
+      setDetailOperations([]);
+      setDetailLoading(true);
+  
+      try {
+        // pass currently selected month/year to fetch scoped operations
+        const monthNum = Number(month);
+        const yearNum = Number(year);
+        const ops = await getWorkerOperations(employeeId, monthNum, yearNum);
+        setDetailOperations(ops);
+        setDetailWorkerName(employeeId);
+        setDetailOpen(true);
+      } catch (err: any) {
+        console.error("Failed to load operations:", err);
+        setDetailError(err?.message ?? "Failed to load operations");
+        // show dialog even on error so user sees message (optional)
+        setDetailWorkerName(employeeId);
+        setDetailOpen(true);
+      } finally {
+        setDetailLoading(false);
+      }
+    };
   const handleDeleteSalary = (workerId: string) => {
     setSalaries(prevSalaries => prevSalaries.filter(salary => salary.workerId !== workerId));
   };
@@ -210,17 +271,17 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
           </SelectContent>
         </Select>
       </div>
-      
+
       <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-                <TableHead>Worker</TableHead>
-                <TableHead className={`${isMobile ? "" : "text-right"}`}>Pieces</TableHead>
-                <TableHead className="text-right">Amount (₹)</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
+              <TableHead>Worker</TableHead>
+              <TableHead className={`${isMobile ? "" : "text-right"}`}>Pieces</TableHead>
+              <TableHead className="text-right">Amount (₹)</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
           </TableHeader>
           <TableBody>
             {aggregatedSalaries.length === 0 ? (
@@ -252,7 +313,7 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => {}}
+                          onClick={() => openDetails(workerSalary.workerId)}
                           className="cursor-pointer"
                         >
                           View Details
@@ -280,6 +341,12 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
           </TableBody>
         </Table>
       </div>
+      <WorkerOperationDetailDialog
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        operations={detailOperations}
+        workerName={detailWorkerName}
+      />
     </div>
   );
 };
