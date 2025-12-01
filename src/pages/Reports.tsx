@@ -12,15 +12,37 @@ import {
   calculateOperationsChartData,
   calculateWorkerPerformance,
   fetchProductCost,
+  calculateCustomReport,
 } from "@/Services/reportService";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { DateRange } from "react-day-picker";
+
 
 const ReportPage: React.FC = () => {
   const [productions, setProductions] = useState<any[]>([]);
   const [selectedProductionId, setSelectedProductionId] = useState<string | null>(null);
   const [operations, setOperations] = useState<any[]>([]);
   const [salaries, setSalaries] = useState<any[]>([]);
-  const [period, setPeriod] = useState<"daily" | "weekly" | "monthly" | "yearly">("monthly");
+  type Period = "daily" | "weekly" | "monthly" | "yearly" | "custom";
+  const [period, setPeriod] = useState<Period | "custom">("monthly");
   const [costPerPiece, setCostPerPiece] = useState(0);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [isCustom, setIsCustom] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<
+    "daily" | "weekly" | "monthly" | "yearly" | "custom"
+  >("monthly");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: undefined,
+    to: undefined,
+  });
+
+
+
 
   useEffect(() => {
     Promise.all([fetchProductions(), fetchWorkerSalaries()])
@@ -33,17 +55,17 @@ const ReportPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-  if (!selectedProductionId) return;
+    if (!selectedProductionId) return;
 
-  // get selected production row
-  const prod = productions.find(p => p.id === selectedProductionId);
-  if (!prod?.product_id) return;
+    // get selected production row
+    const prod = productions.find(p => p.id === selectedProductionId);
+    if (!prod?.product_id) return;
 
-  // fetch product cost from service
-  fetchProductCost(prod.product_id)
-    .then(({ costPerPiece }) => setCostPerPiece(costPerPiece))
-    .catch(() => setCostPerPiece(0));
-}, [selectedProductionId, productions]);
+    // fetch product cost from service
+    fetchProductCost(prod.product_id)
+      .then(({ costPerPiece }) => setCostPerPiece(costPerPiece))
+      .catch(() => setCostPerPiece(0));
+  }, [selectedProductionId, productions]);
 
   useEffect(() => {
     if (!selectedProductionId) return;
@@ -51,13 +73,18 @@ const ReportPage: React.FC = () => {
       .then((ops) => setOperations(ops || []))
       .catch((err) => console.error(err));
   }, [selectedProductionId]);
+  const resolvedPeriod: Period = period === "custom" ? "monthly" : period;
 
-const report = useMemo(
-  () => calculateProductionReport(operations, period, costPerPiece),
-  [operations, period, costPerPiece]
-);
-  const operationsChart = useMemo(() => calculateOperationsChartData(operations, period), [operations, period]);
-  const employeePerformance = useMemo(() => calculateWorkerPerformance(salaries, period), [salaries, period]);
+  const report = useMemo(() => {
+    if (selectedPeriod === "custom" && isCustom) {
+      return calculateCustomReport(operations, startDate, endDate, costPerPiece);
+    }
+
+    return calculateProductionReport(operations, resolvedPeriod, costPerPiece);
+  }, [operations, selectedPeriod, startDate, endDate, costPerPiece, isCustom]);
+
+  const operationsChart = useMemo(() => calculateOperationsChartData(operations, resolvedPeriod), [operations, resolvedPeriod]);
+  const employeePerformance = useMemo(() => calculateWorkerPerformance(salaries, resolvedPeriod), [salaries, resolvedPeriod]);
 
   const chartData = [{
     name: "Production Cost Breakdown",
@@ -100,7 +127,15 @@ const report = useMemo(
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
               <CardTitle>Production Overview</CardTitle>
-              <Select value={period} onValueChange={(v) => setPeriod(v as any)}>
+
+              <Select
+                value={selectedPeriod}
+                onValueChange={
+                  (v) => {
+                    setSelectedPeriod(v as any);
+                    setIsCustom(false);
+                  }}
+              >
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -109,8 +144,51 @@ const report = useMemo(
                   <SelectItem value="weekly">Weekly</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
                   <SelectItem value="yearly">Yearly</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
                 </SelectContent>
               </Select>
+
+              {selectedPeriod === "custom" && (
+                <div className="w-full sm:w-auto">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="flex items-center justify-start w-full sm:w-auto gap-2"
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                      {dateRange.from && dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd, yyyy")} →{" "}
+                          {format(dateRange.to, "LLL dd, yyyy")}
+                        </>
+                      ) : (
+                        <span>Select date range</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="p-0">
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={(range) => {
+                        setDateRange(range);
+                        setIsCustom(true);
+
+                        if (range?.from && range?.to) {
+                          setStartDate(format(range.from, "yyyy-MM-dd"));
+                          setEndDate(format(range.to, "yyyy-MM-dd"));
+                        }
+                      }}
+                      numberOfMonths={2}
+                      className="rounded-md border"
+                    />
+                  </PopoverContent>
+                </Popover>
+                </div>
+              )}
+
             </div>
             <CardDescription>{productions.find(p => p.id === selectedProductionId)?.name ?? 'Select a production to view details'}</CardDescription>
           </CardHeader>
@@ -147,8 +225,8 @@ const report = useMemo(
                   <Tooltip />
                   <Legend />
                   <Bar dataKey="Operation Expense" fill="#4F46E5" />
-                  <Bar dataKey="Raw Material Cost" fill="#10b981"/>
-                  <Bar dataKey="Total Expense" fill="#F59E0B"/>
+                  <Bar dataKey="Raw Material Cost" fill="#10b981" />
+                  <Bar dataKey="Total Expense" fill="#F59E0B" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -161,7 +239,7 @@ const report = useMemo(
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="cost" name="Cost per Operation" fill = "#eb6923ff" />
+                  <Bar dataKey="cost" name="Cost per Operation" fill="#eb6923ff" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

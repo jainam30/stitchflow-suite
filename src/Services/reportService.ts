@@ -8,38 +8,38 @@ export type Period = "daily" | "weekly" | "monthly" | "yearly";
 
 // ----- FETCH PRODUCTIONS + PRODUCT NAME -----
 export const fetchProductions = async () => {
-  // 1. Fetch all productions
-  const { data: productions, error: prodError } = await supabase
-    .from("production")
-    .select("*")
-    .order("created_at", { ascending: false });
+    // 1. Fetch all productions
+    const { data: productions, error: prodError } = await supabase
+        .from("production")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-  if (prodError) throw prodError;
+    if (prodError) throw prodError;
 
-  // 2. Fetch product list for name mapping
-  const { data: productList } = await supabase
-    .from("products")
-    .select("id, name");
+    // 2. Fetch product list for name mapping
+    const { data: productList } = await supabase
+        .from("products")
+        .select("id, name");
 
-  const productMap: Record<string, string> = {};
-  (productList || []).forEach((p) => {
-    productMap[p.id] = p.name;
-  });
+    const productMap: Record<string, string> = {};
+    (productList || []).forEach((p) => {
+        productMap[p.id] = p.name;
+    });
 
-  // 3. Attach product name to each production
-  return (productions || []).map((p: any) => ({
-    id: p.id,
-    product_id: p.product_id,
-    productName: productMap[p.product_id] ?? "Unknown Product",
-    production_code: p.production_code,
-    po_number: p.po_number,
-    color: p.color,
-    total_quantity: p.total_quantity ?? 0,
-    total_fabric: p.total_fabric ?? 0,
-    average: p.average ?? 0,
-    created_by: p.created_by,
-    created_at: toDate(p.created_at),
-  }));
+    // 3. Attach product name to each production
+    return (productions || []).map((p: any) => ({
+        id: p.id,
+        product_id: p.product_id,
+        productName: productMap[p.product_id] ?? "Unknown Product",
+        production_code: p.production_code,
+        po_number: p.po_number,
+        color: p.color,
+        total_quantity: p.total_quantity ?? 0,
+        total_fabric: p.total_fabric ?? 0,
+        average: p.average ?? 0,
+        created_by: p.created_by,
+        created_at: toDate(p.created_at),
+    }));
 };
 
 export const fetchProductionOperations = async (productionId: string) => {
@@ -108,6 +108,48 @@ const inPeriod = (d: Date | null, period: Period, target = new Date()) => {
     return false;
 };
 
+export const calculateCustomReport = (
+    operations: any[],
+    startDate: string,
+    endDate: string,
+    costPerPiece: number
+) => {
+    if (!startDate || !endDate) {
+        return {
+            productionQuantity: 0,
+            operationExpense: 0,
+            rawMaterialCost: 0,
+            totalExpense: 0,
+            efficiency: 0,
+        };
+    }
+
+    const s = new Date(startDate);
+    const e = new Date(endDate);
+
+    const rows = operations.filter((op) => {
+        const d = new Date(op.date);
+        return d >= s && d <= e;
+    });
+
+    const productionQuantity = rows.reduce((s, r) => s + r.pieces_done, 0);
+    const operationExpense = rows.reduce((s, r) => s + r.earnings, 0);
+    const rawMaterialCost = productionQuantity * costPerPiece;
+    const totalExpense = rawMaterialCost + operationExpense;
+
+    const efficiency = rows.length > 0
+        ? Math.round((productionQuantity / (rows.length * 10)) * 100)
+        : 0;
+
+    return {
+        productionQuantity,
+        operationExpense,
+        rawMaterialCost,
+        totalExpense,
+        efficiency,
+    };
+};
+
 export const calculateProductionReport = (
     operations: any[],
     period: Period,
@@ -126,8 +168,8 @@ export const calculateProductionReport = (
 
     // simple efficiency metric if you have target/ability: for now compute as pieces per operation * 100 / arbitrary target
     const efficiency = productionQuantity > 0
-     ? Math.round((productionQuantity / Math.max(1, rows.length * 10)) * 100)
-    : 0;
+        ? Math.round((productionQuantity / Math.max(1, rows.length * 10)) * 100)
+        : 0;
 
     return {
         productionQuantity,
@@ -171,20 +213,20 @@ export const calculateWorkerPerformance = (salaries: any[], period: Period) => {
 };
 // Fetch cost for a product
 export const fetchProductCost = async (productId: string) => {
-  if (!productId) return { costPerPiece: 0 };
+    if (!productId) return { costPerPiece: 0 };
 
-  const { data, error } = await supabase
-    .from("products")
-    .select("material_cost, thread_cost, other_costs")
-    .eq("id", productId)
-    .single();
+    const { data, error } = await supabase
+        .from("products")
+        .select("material_cost, thread_cost, other_costs")
+        .eq("id", productId)
+        .single();
 
-  if (error) return { costPerPiece: 0 };
+    if (error) return { costPerPiece: 0 };
 
-  const costPerPiece =
-    Number(data.material_cost ?? 0) +
-    Number(data.thread_cost ?? 0) +
-    Number(data.other_costs ?? 0);
+    const costPerPiece =
+        Number(data.material_cost ?? 0) +
+        Number(data.thread_cost ?? 0) +
+        Number(data.other_costs ?? 0);
 
-  return { costPerPiece };
+    return { costPerPiece };
 };
