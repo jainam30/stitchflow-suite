@@ -1,0 +1,190 @@
+// src/Services/reportService.ts
+import { supabase } from "@/Config/supabaseClient";
+
+// Helper: ensure date string -> Date
+const toDate = (v: any) => (v ? new Date(v) : null);
+
+export type Period = "daily" | "weekly" | "monthly" | "yearly";
+
+// ----- FETCH PRODUCTIONS + PRODUCT NAME -----
+export const fetchProductions = async () => {
+  // 1. Fetch all productions
+  const { data: productions, error: prodError } = await supabase
+    .from("production")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (prodError) throw prodError;
+
+  // 2. Fetch product list for name mapping
+  const { data: productList } = await supabase
+    .from("products")
+    .select("id, name");
+
+  const productMap: Record<string, string> = {};
+  (productList || []).forEach((p) => {
+    productMap[p.id] = p.name;
+  });
+
+  // 3. Attach product name to each production
+  return (productions || []).map((p: any) => ({
+    id: p.id,
+    product_id: p.product_id,
+    productName: productMap[p.product_id] ?? "Unknown Product",
+    production_code: p.production_code,
+    po_number: p.po_number,
+    color: p.color,
+    total_quantity: p.total_quantity ?? 0,
+    total_fabric: p.total_fabric ?? 0,
+    average: p.average ?? 0,
+    created_by: p.created_by,
+    created_at: toDate(p.created_at),
+  }));
+};
+
+export const fetchProductionOperations = async (productionId: string) => {
+    if (!productionId) return [];
+    const { data, error } = await supabase
+        .from("production_operation")
+        .select(`
+      id,
+      production_id,
+      operation_id,
+      worker_id,
+      pieces_done,
+      earnings,
+      date,
+      operations(name, amount_per_piece)
+    `)
+        .eq("production_id", productionId)
+        .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    return (data || []).map((r: any) => ({
+        ...r,
+        pieces_done: Number(r.pieces_done ?? 0),
+        earnings: Number(r.earnings ?? 0),
+        date: toDate(r.date),
+    }));
+};
+
+export const fetchWorkerSalaries = async () => {
+    const { data, error } = await supabase
+        .from("worker_salaries")
+        .select(`
+      *,
+      workers(name)
+    `)
+        .order("date", { ascending: false });
+
+    if (error) throw error;
+    return (data || []).map((r: any) => ({
+        ...r,
+        pieces_done: Number(r.pieces_done ?? 0),
+        total_amount: Number(r.total_amount ?? 0),
+        amount_per_piece: Number(r.amount_per_piece ?? 0),
+        date: toDate(r.date),
+        workerName: r.workers?.name ?? null,
+    }));
+};
+
+/**
+ * Utility: check if a date falls in the given period relative to `target` (usually now)
+ */
+const inPeriod = (d: Date | null, period: Period, target = new Date()) => {
+    if (!d) return false;
+    const a = d;
+    const b = target;
+    if (period === "daily") return a.toDateString() === b.toDateString();
+    if (period === "weekly") {
+        const getWeek = (dt: Date) => {
+            const oneJan = new Date(dt.getFullYear(), 0, 1);
+            return Math.ceil((((dt as any) - (oneJan as any)) / 86400000 + oneJan.getDay() + 1) / 7);
+        };
+        return a.getFullYear() === b.getFullYear() && getWeek(a) === getWeek(b);
+    }
+    if (period === "monthly") return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+    if (period === "yearly") return a.getFullYear() === b.getFullYear();
+    return false;
+};
+
+export const calculateProductionReport = (
+    operations: any[],
+    period: Period,
+    costPerPiece: number
+) => {
+    // filter rows by period
+    const rows = operations.filter((r) => inPeriod(r.date, period));
+
+    const productionQuantity = rows.reduce((s, r) => s + Number(r.pieces_done ?? 0), 0);
+    const operationExpense = rows.reduce((s, r) => s + Number(r.earnings ?? 0), 0);
+
+    // rawMaterialCost is domain-specific; we try to infer: if production has total_quantity & product data, you can replace
+    const rawMaterialCost = productionQuantity * costPerPiece; // placeholder — calculate from product master or external table if available
+
+    const totalExpense = rawMaterialCost + operationExpense;
+
+    // simple efficiency metric if you have target/ability: for now compute as pieces per operation * 100 / arbitrary target
+    const efficiency = productionQuantity > 0
+     ? Math.round((productionQuantity / Math.max(1, rows.length * 10)) * 100)
+    : 0;
+
+    return {
+        productionQuantity,
+        operationExpense,
+        rawMaterialCost,
+        totalExpense,
+        efficiency,
+    };
+};
+
+export const calculateOperationsChartData = (operations: any[], period: Period) => {
+    const rows = operations.filter((r) => inPeriod(r.date, period));
+    const grouped: Record<string, { name: string; cost: number; pieces: number }> = {};
+    rows.forEach((r) => {
+        const opName = r.operations?.name ?? r.operation_id ?? "Unknown";
+        if (!grouped[opName]) grouped[opName] = { name: opName, cost: 0, pieces: 0 };
+        grouped[opName].cost += Number(r.earnings ?? 0);
+        grouped[opName].pieces += Number(r.pieces_done ?? 0);
+    });
+    return Object.values(grouped).map((g) => ({ name: g.name, cost: g.cost, pieces: g.pieces }));
+};
+
+export const calculateWorkerPerformance = (salaries: any[], period: Period) => {
+    const rows = salaries.filter((r) => inPeriod(r.date, period));
+    const map: Record<string, any> = {};
+    rows.forEach((r) => {
+        const id = r.worker_id ?? r.workerName ?? "unknown";
+        if (!map[id]) map[id] = { workerId: id, workerName: r.workerName ?? "Unknown", totalPieces: 0, earnings: 0, operations: 0 };
+        map[id].totalPieces += Number(r.pieces_done ?? 0);
+        map[id].earnings += Number(r.total_amount ?? 0);
+        map[id].operations += 1;
+    });
+    return Object.values(map).map((m) => ({
+        employeeId: m.workerId,
+        employeeName: m.workerName,
+        totalPiecesCompleted: m.totalPieces,
+        totalOperations: m.operations,
+        efficiency: m.totalPieces > 0 ? Math.round((m.totalPieces / Math.max(1, m.operations * 10)) * 100) : 0,
+        earnings: m.earnings,
+    }));
+};
+// Fetch cost for a product
+export const fetchProductCost = async (productId: string) => {
+  if (!productId) return { costPerPiece: 0 };
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("material_cost, thread_cost, other_costs")
+    .eq("id", productId)
+    .single();
+
+  if (error) return { costPerPiece: 0 };
+
+  const costPerPiece =
+    Number(data.material_cost ?? 0) +
+    Number(data.thread_cost ?? 0) +
+    Number(data.other_costs ?? 0);
+
+  return { costPerPiece };
+};

@@ -9,6 +9,9 @@ import { getOperationsByProductionId, assignWorkerToOperation, insertProductionO
 import { getOperationsByProduct } from "@/Services/operationService";
 import { getWorkers } from "@/Services/workerService";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { addWorkerSalary } from "@/Services/salaryService";
+
 
 interface Props {
   open: boolean;
@@ -20,6 +23,7 @@ interface Props {
 
 const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, production, availableWorkers, onAssignWorker }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [ops, setOps] = useState<any[]>([]);
   const [opMasters, setOpMasters] = useState<any[]>([]);
   const [fetchedWorkers, setFetchedWorkers] = useState<any[]>([]);
@@ -83,8 +87,29 @@ const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, produ
           created_at: new Date().toISOString(),
         };
 
-        await insertProductionOperation(payload);
+        const createdOp = await insertProductionOperation(payload);
         toast({ title: "Added", description: "Operation record created" });
+
+        // create worker salary record when worker assigned and pieces > 0
+        try {
+          if (selectedWorkerId && Number(pieces) > 0) {
+            const amountPerPiece = master?.amount_per_piece ?? master?.rate ?? 0;
+            const total = (Number(pieces) || 0) * Number(amountPerPiece || 0);
+            await addWorkerSalary({
+              worker_id: selectedWorkerId,
+              product_id: (production as any).product_id ?? null,
+              operation_id: masterId,
+              pieces_done: Number(pieces || 0),
+              amount_per_piece: Number(amountPerPiece || 0),
+              total_amount: total,
+              date: payload.date,
+              created_by: user?.id ?? null,
+            });
+          }
+        } catch (err) {
+          console.warn("addWorkerSalary failed for new operation", err);
+          // do not block main flow
+        }
 
         const refreshed = await getOperationsByProductionId(production.id);
         setOps(refreshed || []);
@@ -108,6 +133,27 @@ const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, produ
 
       const res = await assignWorkerToOperation(production.id, selectedOpId, selectedWorkerId || null, pieces || 0, workerName || null);
       toast({ title: "Assigned", description: "Worker and quantity saved" });
+      
+      // add worker salary record for this updated assignment (if worker selected + pieces > 0)
+      try {
+        const opBefore = ops.find(o => o.id === selectedOpId);
+        const amountPerPiece = opBefore?.operations?.amount_per_piece ?? opBefore?.rate_per_piece ?? opBefore?.rate ?? 0;
+        if (selectedWorkerId && Number(pieces) > 0) {
+          const total = (Number(pieces) || 0) * Number(amountPerPiece || 0);
+          await addWorkerSalary({
+            worker_id: selectedWorkerId,
+            product_id: (production as any).product_id ?? null,
+            operation_id: selectedOpId,
+            pieces_done: Number(pieces || 0),
+            amount_per_piece: Number(amountPerPiece || 0),
+            total_amount: total,
+            date: new Date().toISOString(),
+            created_by: user?.id ?? null,
+          });
+        }
+      } catch (err) {
+        console.warn("addWorkerSalary failed for assignment", err);
+      }
 
       const refreshed = await getOperationsByProductionId(production.id);
       setOps(refreshed || []);
@@ -131,7 +177,7 @@ const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, produ
       </DialogHeader>
       <DialogContent>
         <div className="space-y-4">
-          
+
 
           <div>
             <label className="block text-sm font-medium mb-1">Select Operation</label>

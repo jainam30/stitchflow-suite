@@ -345,3 +345,45 @@ export const updateEmployeeSalary = async (id: string, updates: {
 
     return { data, error: null };
 };
+
+export const addWorkerSalary = async (payload: {
+    worker_id: string | null;
+    product_id?: string | null;
+    operation_id?: string | null;
+    pieces_done?: number;
+    amount_per_piece?: number;
+    total_amount?: number;
+    date?: string | Date;
+    created_by?: string | null;
+}) => {
+    const body: any = {
+        worker_id: payload.worker_id,
+        product_id: payload.product_id ?? null,
+        operation_id: payload.operation_id ?? null,
+        pieces_done: Number(payload.pieces_done ?? 0),
+        amount_per_piece: Number(payload.amount_per_piece ?? 0),
+        total_amount: typeof payload.total_amount === "number"
+            ? payload.total_amount
+            : (Number(payload.pieces_done ?? 0) * Number(payload.amount_per_piece ?? 0)),
+        date: payload.date ? (payload.date instanceof Date ? payload.date.toISOString() : String(payload.date)) : new Date().toISOString(),
+        paid: false,
+        paid_date: null,
+        created_at: new Date().toISOString(),
+    };
+
+    try {
+        const { data, error } = await supabase
+            .from("worker_salaries")
+            .insert([body])
+            .select()
+            .single();
+
+        if (error) {
+            // Return friendly error shape (caller handles logging/toast)
+            return { data: null, error };
+        }
+        return { data, error: null };
+    } catch (err: any) {
+        return { data: null, error: err };
+    }
+};
