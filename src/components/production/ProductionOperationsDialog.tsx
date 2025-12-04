@@ -186,20 +186,13 @@ const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, produ
                 <SelectValue placeholder="Choose operation (production operation record)" />
               </SelectTrigger>
               <SelectContent>
-                {/* no empty string SelectItem: empty value is reserved for clearing selection */}
-                {/* First show existing production_operation records (choose to update) */}
-                {ops.map(op => (
-                  <SelectItem key={op.id} value={op.id}>
-                    {op.operations?.name ?? op.operation_id ?? "Operation"} — Pieces done: {op.pieces_done}
-                  </SelectItem>
-                ))}
-                {/* Then show operation masters so user can create a new production_operation */}
-                {opMasters.map(m => (
-                  <SelectItem key={`master-${m.id}`} value={`master:${m.id}`}>{m.name} — ₹{m.amount_per_piece}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                 {/* Show only operation masters so user can create a new production_operation */}
+                 {opMasters.map(m => (
+                   <SelectItem key={`master-${m.id}`} value={`master:${m.id}`}>{m.name} — ₹{m.amount_per_piece}</SelectItem>
+                 ))}
+               </SelectContent>
+             </Select>
+           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1">Select Worker</label>
@@ -234,16 +227,16 @@ const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, produ
           <div className="mt-4">
             <h4 className="font-medium">Existing Operation Records</h4>
             <div className="mt-2 space-y-2">
-              {ops.map(o => (
-                <div key={o.id} className="border rounded p-2">
-                  <div className="text-sm font-medium">{o.operations?.name ?? o.operation_id}</div>
-                  <div className="text-xs text-muted-foreground">
-                    Worker: {o.worker_name ?? "none"} · Pieces: {o.pieces_done} · Date: {o.date}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+              {ops.filter(o => Number(o.pieces_done ?? 0) > 0).map(o => (
+                 <div key={o.id} className="border rounded p-2">
+                   <div className="text-sm font-medium">{o.operations?.name ?? o.operation_id}</div>
+                   <div className="text-xs text-muted-foreground">
+                     Worker: {o.worker_name ?? "none"} · Pieces: {o.pieces_done} · Date: {o.date}
+                   </div>
+                 </div>
+               ))}
+             </div>
+           </div>
         </div>
       </DialogContent>
       <DialogFooter>

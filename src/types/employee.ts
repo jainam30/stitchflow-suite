@@ -3,6 +3,7 @@ export interface Employee {
   id: string;
   name: string;
   employeeId: string;
+  emial: string;
   address: string;
   permanentAddress?: string;
   currentAddress?: string;
@@ -21,6 +22,7 @@ export interface Employee {
 export interface EmployeeFormData {
   name: string;
   employeeId: string;
+  emial: string;
   address: string;
   permanentAddress?: string;
   currentAddress?: string;

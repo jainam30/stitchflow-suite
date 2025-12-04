@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import {
@@ -22,6 +21,7 @@ import { Edit, Lock, MoreVertical, Trash2 } from "lucide-react";
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SupervisorEditDialog } from './SupervisorEditDialog';
+import { deleteSupervisor } from '@/Services/supervisorService';
 
 interface Supervisor {
   id: string;
@@ -34,11 +34,13 @@ interface Supervisor {
 interface SupervisorTableProps {
   supervisors: Supervisor[];
   onToggleStatus: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export const SupervisorTable: React.FC<SupervisorTableProps> = ({ 
   supervisors,
-  onToggleStatus
+  onToggleStatus,
+  onDelete
 }) => {
   const { toast } = useToast();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -49,11 +51,24 @@ export const SupervisorTable: React.FC<SupervisorTableProps> = ({
   const handleDelete = () => {
     if (!selectedSupervisor) return;
     
-    // In a real app, this would call an API to delete the supervisor
-    toast({
-      title: "Supervisor deleted",
-      description: `${selectedSupervisor.name} has been removed.`,
-    });
+    (async () => {
+      const res = await deleteSupervisor(selectedSupervisor.id);
+      if (res.error) {
+        toast({
+          title: "Failed to delete supervisor",
+          description: res.error?.message ?? "An error occurred",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Supervisor deleted",
+        description: `${selectedSupervisor.name} has been removed.`,
+      });
+
+      onDelete?.(selectedSupervisor.id);
+    })();
     
     setIsDeleteDialogOpen(false);
     setSelectedSupervisor(null);

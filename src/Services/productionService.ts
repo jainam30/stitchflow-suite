@@ -140,15 +140,38 @@ export const createProduction = async (productionData: any) => {
  * Get production_operation rows by production id
  */
 export const getOperationsByProductionId = async (productionId: string) => {
-  const { data, error } = await supabase
+  // Step 1 - fetch production_operation rows
+  const { data: opsRows, error: opsErr } = await supabase
     .from("production_operation")
-    .select("*, operations(name, amount_per_piece)") // include operation master name if relationship exists
+    .select("*")
     .eq("production_id", productionId)
     .order("created_at", { ascending: true });
 
-  if (error) throw error;
-  return data ?? [];
-};
+  if (opsErr) throw opsErr;
+  const rows = opsRows || [];
+
+  // Step 2 - collect operation master ids referenced and fetch names/rates
+  const opIds = Array.from(new Set(rows.map((r: any) => r.operation_id).filter(Boolean)));
+  let opMap: Record<string, any> = {};
+  if (opIds.length > 0) {
+    const { data: masterOps, error: masterErr } = await supabase
+      .from("operations")
+      .select("id,name,amount_per_piece")
+      .in("id", opIds);
+     if (!masterErr && Array.isArray(masterOps)) {
+       masterOps.forEach((m: any) => { if (m?.id) opMap[m.id] = m; });
+     }
+   }
+
+   // Merge operation master info into each production_operation row under an `operations` property.
+   return (rows || []).map((r: any) => {
+     const master = r.operation_id ? opMap[r.operation_id] : undefined;
+     return {
+       ...r,
+       operations: master ? { name: master.name, amount_per_piece: master.amount_per_piece } : undefined,
+     };
+   });
+ };
 
 /**
  * Assign worker and set pieces for a production operation.

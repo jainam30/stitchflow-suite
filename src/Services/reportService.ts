@@ -68,23 +68,46 @@ export const fetchProductionOperations = async (productionId: string) => {
     }));
 };
 
+// 1) fetch raw salary rows (no embedding)
 export const fetchWorkerSalaries = async () => {
-    const { data, error } = await supabase
+    const { data: rows, error } = await supabase
         .from("worker_salaries")
-        .select(`
-      *,
-      workers(name)
-    `)
+        .select("*")
         .order("date", { ascending: false });
-
     if (error) throw error;
-    return (data || []).map((r: any) => ({
+    const list = rows || [];
+
+    // 2) collect IDs to lookup related names safely
+    const workerIds = Array.from(new Set(list.map((r: any) => r.worker_id).filter(Boolean)));
+    const opIds = Array.from(new Set(list.map((r: any) => r.operation_id).filter(Boolean)));
+    const productIds = Array.from(new Set(list.map((r: any) => r.product_id).filter(Boolean)));
+
+    // 3) batch fetch lookups (if any)
+    const [workersRes, opsRes, prodsRes] = await Promise.all([
+        workerIds.length ? supabase.from("workers").select("id,name").in("id", workerIds) : Promise.resolve({ data: [] }),
+        opIds.length ? supabase.from("operations").select("id,name,amount_per_piece").in("id", opIds) : Promise.resolve({ data: [] }),
+        productIds.length ? supabase.from("products").select("id,name").in("id", productIds) : Promise.resolve({ data: [] }),
+    ]);
+
+    const workerMap: Record<string, any> = {};
+    (workersRes.data || []).forEach((w: any) => { if (w?.id) workerMap[w.id] = w; });
+
+    const opMap: Record<string, any> = {};
+    (opsRes.data || []).forEach((o: any) => { if (o?.id) opMap[o.id] = o; });
+
+    const productMap: Record<string, any> = {};
+    (prodsRes.data || []).forEach((p: any) => { if (p?.id) productMap[p.id] = p; });
+
+    // 4) map and normalize output for the caller
+    return list.map((r: any) => ({
         ...r,
         pieces_done: Number(r.pieces_done ?? 0),
         total_amount: Number(r.total_amount ?? 0),
         amount_per_piece: Number(r.amount_per_piece ?? 0),
         date: toDate(r.date),
-        workerName: r.workers?.name ?? null,
+        workerName: r.worker_name ?? (r.worker_id ? (workerMap[r.worker_id]?.name ?? null) : null),
+        operationName: r.operation_name ?? (r.operation_id ? (opMap[r.operation_id]?.name ?? null) : null),
+        productName: r.product_name ?? (r.product_id ? (productMap[r.product_id]?.name ?? null) : null),
     }));
 };
 

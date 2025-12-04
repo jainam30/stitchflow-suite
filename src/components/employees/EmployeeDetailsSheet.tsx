@@ -247,10 +247,10 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                 <div className="grid gap-4">
                   <FormField
                     control={form.control}
-                    name="address"
+                    name="currentAddress"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Address</FormLabel>
+                        <FormLabel>Current Address</FormLabel>
                         <FormControl>
                           <Input {...field} disabled={disabled} />
                         </FormControl>
@@ -271,19 +271,7 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="currentAddress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Current Address</FormLabel>
-                        <FormControl>
-                          <Input {...field} disabled={disabled} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  
                 </div>
               </div>
 

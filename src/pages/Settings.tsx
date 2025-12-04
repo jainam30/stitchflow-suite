@@ -1,12 +1,10 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/components/ui/use-toast';
-
 import {
   Card,
   CardContent,
@@ -33,24 +31,8 @@ import { Button } from '@/components/ui/button';
 import { User, Shield, Lock } from 'lucide-react';
 import { AddSupervisorDialog } from '@/components/settings/AddSupervisorDialog';
 import { SupervisorTable } from '@/components/settings/SupervisorTable';
-
-// Mock data for supervisors
-const mockSupervisors = [
-  {
-    id: '1',
-    name: 'Supervisor User',
-    email: 'supervisor@mohil.com',
-    isActive: true,
-    createdAt: new Date('2023-01-15'),
-  },
-  {
-    id: '2',
-    name: 'Another Supervisor',
-    email: 'supervisor2@mohil.com',
-    isActive: false,
-    createdAt: new Date('2023-03-20'),
-  },
-];
+import { getSupervisors, addSupervisor, toggleSupervisorStatus } from '@/Services/supervisorService';
+import { AddSupervisorPayload } from '@/components/settings/AddSupervisorDialog'; // type from dialog
 
 // Schema for password change form
 const passwordSchema = z.object({
@@ -67,7 +49,8 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 const Settings: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const [supervisors, setSupervisors] = useState(mockSupervisors);
+  const [supervisors, setSupervisors] = useState<any[]>([]);
+  const [loadingSupervisors, setLoadingSupervisors] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   
   // Form for changing password
@@ -85,6 +68,22 @@ const Settings: React.FC = () => {
     return <Navigate to="/dashboard" />;
   }
 
+  // Load supervisors from DB on mount
+  useEffect(() => {
+    const load = async () => {
+      setLoadingSupervisors(true);
+      try {
+        const rows = await getSupervisors();
+        setSupervisors(rows);
+      } catch (err) {
+        console.error("Failed to load supervisors:", err);
+      } finally {
+        setLoadingSupervisors(false);
+      }
+    };
+    load();
+  }, []);
+
   const onPasswordSubmit = (values: PasswordFormValues) => {
     // In a real app, this would call an API to change the password
     console.log('Changing password:', values);
@@ -99,23 +98,49 @@ const Settings: React.FC = () => {
     passwordForm.reset();
   };
 
-  const handleAddSupervisor = (name: string, email: string) => {
-    // In a real app, this would call the API to register a new supervisor
-    const newSupervisor = {
-      id: `${supervisors.length + 1}`,
-      name,
-      email,
-      isActive: true,
-      createdAt: new Date(),
-    };
-    
-    setSupervisors([...supervisors, newSupervisor]);
+  const handleAddSupervisor = async (payload: AddSupervisorPayload) => {
+    const res = await addSupervisor(payload);
+    if (res.error) {
+      toast({
+        title: "Failed to add supervisor",
+        description: res.error?.message ?? "An error occurred",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (res.data) {
+      setSupervisors([res.data, ...supervisors]);
+      toast({
+        title: "Supervisor added",
+        description: `${res.data.name} has been added as a supervisor.`,
+      });
+    }
   };
 
-  const handleToggleSupervisorStatus = (id: string) => {
-    setSupervisors(supervisors.map(supervisor => 
-      supervisor.id === id ? { ...supervisor, isActive: !supervisor.isActive } : supervisor
-    ));
+  const handleToggleSupervisorStatus = async (id: string) => {
+    const supervisor = supervisors.find(s => s.id === id);
+    if (!supervisor) return;
+
+    const res = await toggleSupervisorStatus(id, supervisor.isActive);
+    if (res.error) {
+      toast({
+        title: "Failed to toggle status",
+        description: res.error?.message ?? "An error occurred",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (res.data) {
+      setSupervisors(supervisors.map(s => 
+        s.id === id ? { ...s, isActive: res.data.isActive } : s
+      ));
+      toast({
+        title: "Status updated",
+        description: `${supervisor.name} is now ${res.data.isActive ? "active" : "inactive"}.`,
+      });
+    }
   };
 
   return (
