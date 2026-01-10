@@ -205,13 +205,13 @@ const Sidebar: React.FC = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="uppercase font-bold tracking-widest text-sm text-black pl-3 py-1.5">
-              ADMINISTRATION
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
+        <SidebarGroup>
+          <SidebarGroupLabel className="uppercase font-bold tracking-widest text-sm text-black pl-3 py-1.5">
+            {isAdmin ? "ADMINISTRATION" : "ACCOUNT"}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {isAdmin && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <NavLink
@@ -226,14 +226,8 @@ const Sidebar: React.FC = () => {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+              )}
 
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <button
