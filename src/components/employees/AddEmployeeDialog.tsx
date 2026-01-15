@@ -71,8 +71,11 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
   const { toast } = useToast();
   const [idProofPreview, setIdProofPreview] = useState<string | null>(null);
   const [bankImagePreview, setBankImagePreview] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState<string>("basic");
 
   const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    mode: "onChange",
     defaultValues: {
       name: "",
       employeeId: "",
@@ -95,8 +98,43 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
       salary: 0,
       isActive: true,
     }
-
   });
+
+  // Reset form and step when dialog opens/closes
+  React.useEffect(() => {
+    if (open) {
+      setCurrentStep("basic");
+    } else {
+      // Reset form when closing
+      form.reset();
+      setCurrentStep("basic");
+      setIdProofPreview(null);
+      setBankImagePreview(null);
+    }
+  }, [open, form]);
+
+  // Validate current step before proceeding
+  const validateCurrentStep = async () => {
+    let fieldsToValidate: (keyof z.infer<typeof formSchema>)[] = [];
+
+    switch (currentStep) {
+      case "basic":
+        fieldsToValidate = ["name", "employeeId", "mobileNumber", "emergencyNumber"];
+        break;
+      case "address":
+        fieldsToValidate = ["address"];
+        break;
+      case "documents":
+        fieldsToValidate = ["idProof"];
+        break;
+      case "bank":
+        fieldsToValidate = ["bankName", "accountHolderName", "accountNumber", "confirmAccountNumber", "ifscCode", "bankAccountDetail", "salary"];
+        break;
+    }
+
+    const isValid = await form.trigger(fieldsToValidate);
+    return isValid;
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -248,21 +286,21 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid grid-cols-4 mb-6">
-                <TabsTrigger value="basic">
+            <Tabs value={currentStep} onValueChange={setCurrentStep} className="w-full">
+              <TabsList className="grid grid-cols-4 mb-6 pointer-events-none">
+                <TabsTrigger value="basic" className="pointer-events-none">
                   <User className="mr-2 h-4 w-4" />
                   Basic Info
                 </TabsTrigger>
-                <TabsTrigger value="address">
+                <TabsTrigger value="address" className="pointer-events-none">
                   <Shield className="mr-2 h-4 w-4" />
                   Address
                 </TabsTrigger>
-                <TabsTrigger value="documents">
+                <TabsTrigger value="documents" className="pointer-events-none">
                   <FileImage className="mr-2 h-4 w-4" />
                   Documents
                 </TabsTrigger>
-                <TabsTrigger value="bank">
+                <TabsTrigger value="bank" className="pointer-events-none">
                   <Banknote className="mr-2 h-4 w-4" />
                   Bank Details
                 </TabsTrigger>
@@ -607,17 +645,57 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
               </TabsContent>
             </Tabs>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex justify-between gap-3">
+              <div>
+                {currentStep !== "basic" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const steps = ["basic", "address", "documents", "bank"];
+                      const currentIndex = steps.indexOf(currentStep);
+                      if (currentIndex > 0) {
+                        setCurrentStep(steps[currentIndex - 1]);
+                      }
+                    }}
+                  >
+                    Previous
+                  </Button>
+                )}
+              </div>
 
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
 
+                {currentStep !== "bank" ? (
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      const isValid = await validateCurrentStep();
+                      if (!isValid) {
+                        toast({
+                          title: "Validation Error",
+                          description: "Please fill all required fields correctly before proceeding.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
 
-            </div>
-
-            <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">Save Employee</Button>
+                      const steps = ["basic", "address", "documents", "bank"];
+                      const currentIndex = steps.indexOf(currentStep);
+                      if (currentIndex < steps.length - 1) {
+                        setCurrentStep(steps[currentIndex + 1]);
+                      }
+                    }}
+                  >
+                    Next
+                  </Button>
+                ) : (
+                  <Button type="submit">Save Employee</Button>
+                )}
+              </div>
             </div>
           </form>
         </Form>

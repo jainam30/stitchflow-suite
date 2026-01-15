@@ -104,6 +104,19 @@ export const AttendanceTable = ({
                   const key = `${emp.id}-${d + 1}`;
                   const row = local[key] || { status: "present" };
 
+                  const getStatusColor = (status) => {
+                    switch (status) {
+                      case "present":
+                        return "bg-green-400 text-white hover:bg-green-600 focus:ring-green-500";
+                      case "absent":
+                        return "bg-red-400 text-white hover:bg-red-600 focus:ring-red-500";
+                      case "leave":
+                        return "bg-yellow-400 text-white hover:bg-yellow-600 focus:ring-yellow-500";
+                      default:
+                        return "";
+                    }
+                  };
+
                   return (
                     <TableCell key={key} className="text-center">
                       <Select
@@ -111,14 +124,14 @@ export const AttendanceTable = ({
                         onValueChange={(value) => handleChange(emp.id, d + 1, value)}
                         disabled={isPaid}
                       >
-                        <SelectTrigger className="w-[100px]">
+                        <SelectTrigger className={`w-[100px] border-0 ${getStatusColor(row.status)}`}>
                           <SelectValue />
                         </SelectTrigger>
 
                         <SelectContent>
-                          <SelectItem value="present">P</SelectItem>
-                          <SelectItem value="absent">A</SelectItem>
-                          <SelectItem value="leave">L</SelectItem>
+                          <SelectItem value="present" className="text-green-600">P</SelectItem>
+                          <SelectItem value="absent" className="text-red-600">A</SelectItem>
+                          <SelectItem value="leave" className="text-yellow-600">L</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>

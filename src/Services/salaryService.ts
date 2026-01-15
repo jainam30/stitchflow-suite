@@ -2,14 +2,17 @@ import { supabase } from "@/Config/supabaseClient";
 import { getMonthlyAttendanceSummary } from "./attendanceService";
 
 export const getWorkerSalaries = async () => {
-    const { data, error } = await supabase
-        .from("worker_salaries")
-        .select("*")
-        .order("date", { ascending: false });
+    // Parallel fetch: Salaries and Advances
+    const [salariesRes, advancesRes] = await Promise.all([
+        supabase.from("worker_salaries").select("*").order("date", { ascending: false }),
+        supabase.from("worker_advances").select("*").order("date", { ascending: false })
+    ]);
 
-    if (error) throw error;
+    if (salariesRes.error) throw salariesRes.error;
+    if (advancesRes.error) console.warn("Failed to fetch worker advances", advancesRes.error); // Warn but continue
 
-    const rows = data || [];
+    const salaryRows = salariesRes.data || [];
+    const advanceRows = advancesRes.data || [];
 
     // fetch lookups
     const [{ data: workers }, { data: products }, { data: operations }] = await Promise.all([
@@ -26,7 +29,8 @@ export const getWorkerSalaries = async () => {
     (products || []).forEach((p: any) => { if (p && p.id) productMap[p.id] = p; });
     (operations || []).forEach((o: any) => { if (o && o.id) opMap[o.id] = o; });
 
-    return (rows || []).map((r: any) => ({
+    // Map Salaries
+    const mappedSalaries = salaryRows.map((r: any) => ({
         id: r.id,
         workerId: r.worker_id,
         workerName: workerMap[r.worker_id]?.name || null,
@@ -41,7 +45,31 @@ export const getWorkerSalaries = async () => {
         paid: !!r.paid,
         paidDate: r.paid_date ? new Date(r.paid_date) : undefined,
         paidBy: r.paid_by_employee_id || undefined,
+        type: 'salary' // marker
     }));
+
+    // Map Advances as "Salary" records with negative amount for calculation compatibility
+    const mappedAdvances = advanceRows.map((a: any) => ({
+        id: a.id.toString(), // Ensure ID string compatibility if BigInt
+        workerId: a.worker_id,
+        workerName: workerMap[a.worker_id]?.name || null,
+        productId: null,
+        productName: "ADVANCE",
+        date: a.date ? new Date(a.date) : new Date(),
+        operationId: null,
+        operationName: a.note || "Advance Payment",
+        piecesDone: 0,
+        amountPerPiece: 0,
+        totalAmount: -Math.abs(Number(a.amount || 0)), // Negative for deduction
+        paid: false, // Advances don't have "paid" status usually, or are always "paid out"? 
+        // For salary calculation, they adhere to "paid" status of the salary slip?
+        // Let's assume false until salary is finalized. or just N/A.
+        paidDate: undefined,
+        type: 'advance'
+    }));
+
+    // Merge and Sort
+    return [...mappedSalaries, ...mappedAdvances].sort((a, b) => b.date.getTime() - a.date.getTime());
 };
 
 export const markWorkerSalariesPaid = async (
@@ -148,15 +176,30 @@ export const getWorkerOperations = async (workerId: string, month?: number, year
 };
 
 export const getEmployeeSalaries = async () => {
-    // Use schema-backed columns and order by created_at (exists on your table)
-    const { data, error } = await supabase
-        .from("employee_salaries")
-        .select("*")
-        .order("created_at", { ascending: false });
+    // Parallel fetch: Salaries and Advances
+    const [salariesRes, advancesRes] = await Promise.all([
+        supabase.from("employee_salaries").select("*").order("created_at", { ascending: false }),
+        supabase.from("employee_advances").select("*")
+    ]);
 
-    if (error) throw error;
+    if (salariesRes.error) throw salariesRes.error;
+    // We treat advances as supplementary; if fetch fails, we might just miss them, but better to warn.
+    if (advancesRes.error) console.warn("Failed to fetch employee advances", advancesRes.error);
 
-    const rows = data || [];
+    const rows = salariesRes.data || [];
+    const advanceRows = advancesRes.data || [];
+
+    // Aggregate advances by Employee + Month (YYYY-MM)
+    // Map key: "employeeId_YYYY-MM"
+    const advanceMap: Record<string, number> = {};
+
+    advanceRows.forEach((adv: any) => {
+        if (!adv.date || !adv.employee_id) return;
+        const d = new Date(adv.date);
+        const key = `${adv.employee_id}_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        advanceMap[key] = (advanceMap[key] || 0) + Number(adv.amount || 0);
+    });
+
     return (rows || []).map((r: any) => {
         // parse salary_month (expected to be text like "2023-04" or other human formats)
         const raw = r.salary_month;
@@ -170,22 +213,29 @@ export const getEmployeeSalaries = async () => {
                 const d = isoMatch[3] ? Number(isoMatch[3]) : 1;
                 monthDate = new Date(y, m, d);
             } else {
-                // fallback to Date constructor (handles "Apr 2023", etc.)
+                // fallback to Date constructor
                 monthDate = new Date(raw);
             }
         } else {
             monthDate = r.created_at ? new Date(r.created_at) : new Date();
         }
 
+        // Calculate Dynamic Advance
+        const monthKey = `${r.employee_id}_${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
+        const ledgerAdvance = advanceMap[monthKey] || 0;
+        const storedAdvance = Number(r.advance ?? 0);
+        const totalAdvance = storedAdvance + ledgerAdvance;
+
+        const gross = Number(r.gross_salary ?? r.salary ?? 0);
+
         return {
             id: r.id,
             employeeId: r.employee_id,
             employeeName: r.employee_name ?? null,
             month: monthDate,
-            // map gross_salary -> salary for compatibility with UI type
-            salary: Number(r.gross_salary ?? r.salary ?? 0),
-            advance: Number(r.advance ?? 0),
-            netSalary: Number(r.net_salary ?? 0),
+            salary: gross,
+            advance: totalAdvance, // Display total
+            netSalary: gross - totalAdvance, // Recalculate Net
             paid: !!r.paid,
             paidDate: r.paid_date ? new Date(r.paid_date) : undefined,
             paidBy: r.paid_by_employee_id || undefined,
@@ -563,4 +613,126 @@ export const getPaidEmployeeIdsForMonth = async (month: number, year: number) =>
     }
 
     return (data || []).map((r: any) => r.employee_id);
+};
+
+export const deleteWorkerSalary = async (workerId: string, operationId: string, date: string) => {
+    // Delete based on worker, operation(master), and date
+    // Note: this deletes ALL matching records if duplicates exist for same day/op
+    const { error } = await supabase
+        .from("worker_salaries")
+        .delete()
+        .eq("worker_id", workerId)
+        .eq("operation_id", operationId)
+        .eq("date", date);
+
+    if (error) throw error;
+    return true;
+};
+
+export const updateWorkerSalaryByOps = async (
+    workerId: string,
+    operationId: string,
+    date: string,
+    updates: { pieces_done?: number; total_amount?: number }
+) => {
+    // Update based on match
+    const payload: any = {};
+    if (updates.pieces_done !== undefined) payload.pieces_done = updates.pieces_done;
+    if (updates.total_amount !== undefined) payload.total_amount = updates.total_amount;
+
+    const { data, error } = await supabase
+        .from("worker_salaries")
+        .update(payload)
+        .eq("worker_id", workerId)
+        .eq("operation_id", operationId)
+        .eq("date", date)
+        .select();
+
+    if (error) throw error;
+    return data;
+};
+
+export const addEmployeeAdvance = async (payload: { employeeId: string; amount: number; date: Date; note?: string }) => {
+    // 1. Insert into employee_advances ledger
+    const { data: ledgerData, error: ledgerError } = await supabase.from("employee_advances").insert([{
+        employee_id: payload.employeeId,
+        amount: payload.amount,
+        note: payload.note,
+        date: payload.date.toISOString(),
+        created_at: new Date().toISOString()
+    }]).select();
+
+    if (ledgerError) {
+        return { error: ledgerError };
+    }
+
+    // 2. Ensure salary record exists so the advance is visible (via aggregation in getEmployeeSalaries)
+    const m = payload.date.getMonth() + 1;
+    const y = payload.date.getFullYear();
+    const salaryMonth = `${y}-${String(m).padStart(2, "0")}`;
+
+    const { data: salaryRecord, error: fetchErr } = await supabase
+        .from("employee_salaries")
+        .select("*")
+        .eq("employee_id", payload.employeeId)
+        .eq("salary_month", salaryMonth)
+        .maybeSingle();
+
+    if (fetchErr) {
+        console.error("Error checking employee salary on advance add", fetchErr);
+        // Return success for the advance even if salary check fails
+        return { data: ledgerData, error: null };
+    }
+
+    if (!salaryRecord) {
+        // Create new salary record (if not exists yet)
+        const employees = await getEmployees();
+        const emp = employees.find((e: any) => e.id === payload.employeeId);
+        const base = emp?.base_salary || 0;
+
+        // Init with base salary. 
+        // 'Advance' column in DB stays 0. 
+        // Aggregation in getEmployeeSalaries will add the ledger amount.
+        await createEmployeeSalary({
+            employeeId: payload.employeeId,
+            salaryMonth: payload.date,
+            grossSalary: base,
+            advance: 0,
+            netSalary: base, // Initially base, aggregation will deduct
+            employeeName: emp?.name
+        });
+    }
+
+    return { data: ledgerData, error: null };
+};
+
+export const addWorkerAdvance = async (payload: { workerId: string; amount: number; date: Date; note?: string }) => {
+    // Insert into worker_advances table
+    // Note: table schema uses 'id' serial (bigint) and 'worker_id' uuid
+    const { data, error } = await supabase
+        .from("worker_advances")
+        .insert([{
+            worker_id: payload.workerId,
+            amount: payload.amount,
+            date: payload.date.toISOString(),
+            note: payload.note
+        }])
+        .select()
+        .single();
+
+    if (error) return { data: null, error };
+
+    // Return mapped object compatible with WorkerSalary interface for UI update
+    return {
+        data: {
+            id: data.id.toString(), // BigInt to string
+            worker_id: data.worker_id,
+            total_amount: -Math.abs(Number(data.amount)),
+            pieces_done: 0,
+            date: data.date,
+            note: data.note,
+            type: 'advance'
+        },
+        error: null
+    };
 };

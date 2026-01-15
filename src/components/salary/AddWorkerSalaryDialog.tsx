@@ -21,6 +21,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { WorkerSalary, WorkerSalaryFormData } from '@/types/salary';
 import { getWorkers } from '@/Services/workerService';
+import { getOperationsByProductionId } from '@/Services/productionService';
 import { useAuth } from '@/contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { Production } from '@/types/production';
@@ -41,7 +42,7 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
   const [formData, setFormData] = useState<WorkerSalaryFormData>({
     workerId: '',
     productId: '',
@@ -50,13 +51,13 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
     amountPerPiece: 0,
     totalAmount: 0,
   });
-  
+
   const [workers, setWorkers] = useState<any[]>([]);
   const [selectedWorker, setSelectedWorker] = useState<any | null>(null);
   const [selectedOperation, setSelectedOperation] = useState<any | null>(null);
   const [selectedProduction, setSelectedProduction] = useState<Production | null>(null);
   const [availableOperations, setAvailableOperations] = useState<any[]>([]);
-  
+
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (open) {
@@ -85,7 +86,7 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
       }
     })();
   }, []);
-  
+
   const handleWorkerChange = (value: string) => {
     const worker = workers.find(w => w.id === value);
 
@@ -97,14 +98,38 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
       }));
     }
   };
-  
-  const handleProductionChange = (value: string) => {
+
+  const handleProductionChange = async (value: string) => {
     const production = productions.find(p => p.id === value);
-    
+
     if (production) {
       setSelectedProduction(production);
-      setAvailableOperations(production.operations);
-      
+
+      // Fetch operations for this production
+      try {
+        const ops = await getOperationsByProductionId(value);
+
+        // Use a Map to deduplicate by Master Operation ID
+        const uniqueOpsMap = new Map();
+
+        ops.forEach((o: any) => {
+          if (!o.operation_id) return;
+          if (!uniqueOpsMap.has(o.operation_id)) {
+            uniqueOpsMap.set(o.operation_id, {
+              id: o.operation_id, // Important: Use Master ID for salary record
+              name: o.operations?.name || "Unknown Operation",
+              ratePerPiece: o.operations?.amount_per_piece || 0,
+            });
+          }
+        });
+
+        const mappedOps = Array.from(uniqueOpsMap.values());
+        setAvailableOperations(mappedOps);
+      } catch (e) {
+        console.error("Failed to load operations", e);
+        setAvailableOperations([]);
+      }
+
       setFormData(prev => ({
         ...prev,
         productId: value,
@@ -115,30 +140,27 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
       }));
     }
   };
-  
+
   const handleOperationChange = (value: string) => {
     const operation = availableOperations.find(op => op.id === value);
-    
+
     if (operation) {
       setSelectedOperation(operation);
-      
+
       setFormData(prev => ({
         ...prev,
         operationId: value,
         amountPerPiece: operation.ratePerPiece,
         totalAmount: prev.piecesDone * operation.ratePerPiece
       }));
-      
-      // If operation has an assigned worker, select that worker
-      if (operation.assignedWorkerId) {
-        handleWorkerChange(operation.assignedWorkerId);
-      }
+
+      // Auto-worker selection is removed as we might not have a unique worker for the op type
     }
   };
-  
+
   const handlePiecesDoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const pieces = parseInt(e.target.value) || 0;
-    
+
     setFormData(prev => ({
       ...prev,
       piecesDone: pieces,
@@ -148,17 +170,17 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
 
   const handleAmountPerPieceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const amount = parseFloat(e.target.value) || 0;
-    
+
     setFormData(prev => ({
       ...prev,
       amountPerPiece: amount,
       totalAmount: prev.piecesDone * amount,
     }));
   };
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate form
     if (!formData.workerId || !formData.productId || !formData.operationId || formData.piecesDone <= 0) {
       toast({
@@ -168,7 +190,7 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
       });
       return;
     }
-    
+
     // Create new worker salary record
     const newSalary: WorkerSalary = {
       id: uuidv4(),
@@ -184,11 +206,11 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
       totalAmount: formData.totalAmount,
       paid: false,
     };
-    
+
     // Pass the new salary to the parent component
     onAddSalary(newSalary);
     console.log('New worker salary record:', newSalary);
-    
+
     // Reset form and close dialog
     setFormData({
       workerId: '',
@@ -203,17 +225,17 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
     setSelectedProduction(null);
     onOpenChange(false);
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Worker Salary</DialogTitle>
           <DialogDescription>
             Create a new salary record for work completed by a worker.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -225,7 +247,7 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
                 <SelectTrigger id="worker">
                   <SelectValue placeholder="Select worker" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   {workers.map((worker) => (
                     <SelectItem key={worker.id} value={worker.id}>
                       {worker.name} ({worker.id})
@@ -234,7 +256,7 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="production">Production</Label>
               <Select
@@ -244,17 +266,17 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
                 <SelectTrigger id="production">
                   <SelectValue placeholder="Select production" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   {productions.map((production) => (
                     <SelectItem key={production.id} value={production.id}>
-                      {production.name}
+                      {production.productName || production.name || "Unnamed Production"}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="operation">Operation</Label>
@@ -266,17 +288,16 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
                 <SelectTrigger id="operation">
                   <SelectValue placeholder="Select operation" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   {availableOperations.map((operation) => (
                     <SelectItem key={operation.id} value={operation.id}>
                       {operation.name} (₹{operation.ratePerPiece}/piece)
-                      {operation.assignedWorkerName && ` - ${operation.assignedWorkerName}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="piecesDone">Pieces Completed</Label>
               <Input
@@ -289,7 +310,7 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amountPerPiece">Rate per Piece (₹)</Label>
@@ -305,7 +326,7 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
                 className={selectedOperation ? "bg-muted" : ""}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="totalAmount">Total Amount (₹)</Label>
               <Input
@@ -317,16 +338,16 @@ export const AddWorkerSalaryDialog: React.FC<AddWorkerSalaryDialogProps> = ({
               />
             </div>
           </div>
-          
+
           {selectedProduction && (
             <div className="text-sm text-muted-foreground">
-              <p>Selected Production: {selectedProduction.name} ({selectedProduction.productId})</p>
+              <p>Selected Production: {selectedProduction.productName || selectedProduction.name} ({selectedProduction.productId})</p>
               {selectedOperation && (
                 <p>Operation Rate: ₹{selectedOperation.ratePerPiece} per piece</p>
               )}
             </div>
           )}
-          
+
           <DialogFooter>
             <Button type="submit">Add Salary Record</Button>
           </DialogFooter>

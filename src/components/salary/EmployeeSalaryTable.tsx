@@ -31,6 +31,8 @@ import { useToast } from '@/hooks/use-toast';
 import { getEmployeeSalaries, markEmployeeSalariesPaid } from '@/Services/salaryService';
 import { getEmployees } from "@/Services/salaryService";
 import EditEmployeeSalaryDialog from "./EditEmployeeSalaryDialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { AddEmployeeAdvanceDialog } from "./AddEmployeeAdvanceDialog";
 
 interface EmployeeSalaryTableProps {
   month: string;
@@ -46,6 +48,9 @@ export const EmployeeSalaryTable: React.FC<EmployeeSalaryTableProps> = ({ month,
   const [employeesMap, setEmployeesMap] = useState<Record<string, any>>({});
   const [editOpen, setEditOpen] = useState(false);
   const [editingSalary, setEditingSalary] = useState<EmployeeSalary | null>(null);
+  const { user } = useAuth();
+  const [advanceOpen, setAdvanceOpen] = useState(false);
+  const [advanceEmpId, setAdvanceEmpId] = useState<string>("");
 
   // show toast when load fails so user notices error
   useEffect(() => {
@@ -201,7 +206,16 @@ export const EmployeeSalaryTable: React.FC<EmployeeSalaryTableProps> = ({ month,
                          >
                            View Details
                          </DropdownMenuItem> */}
-                        {!salary.paid && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setAdvanceEmpId(salary.employeeId);
+                            setAdvanceOpen(true);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          Add Advance
+                        </DropdownMenuItem>
+                        {(!salary.paid && user?.role === 'admin') && (
                           <DropdownMenuItem
                             onClick={() => markAsPaid(salary.id)}
                             className="cursor-pointer"
@@ -239,6 +253,13 @@ export const EmployeeSalaryTable: React.FC<EmployeeSalaryTableProps> = ({ month,
         onOpenChange={(v) => { setEditOpen(v); if (!v) setEditingSalary(null); }}
         salary={editingSalary}
         onUpdated={applyUpdated}
+      />
+
+      <AddEmployeeAdvanceDialog
+        open={advanceOpen}
+        onOpenChange={setAdvanceOpen}
+        employeeId={advanceEmpId}
+        onSaved={loadSalaries}
       />
     </div>
   );
