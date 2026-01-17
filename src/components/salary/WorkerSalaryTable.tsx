@@ -369,6 +369,7 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
         onClose={() => setDetailOpen(false)}
         operations={detailOperations}
         workerName={detailWorkerName}
+        onUpdate={() => detailWorkerName && openDetails(detailWorkerName)}
       />
 
       <AddWorkerAdvanceDialog
