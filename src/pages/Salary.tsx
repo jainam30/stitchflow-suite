@@ -13,6 +13,7 @@ import { PlusCircle, Calculator, Menu } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { WorkerSalary } from '@/types/salary';
 import { getWorkerSalaries } from '@/Services/salaryService';
+import { getProductions } from '@/Services/productionService';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Production } from '@/types/production';
@@ -68,10 +69,17 @@ const Salary: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const rows = await getWorkerSalaries();
-        if (rows && rows.length > 0) setWorkerSalaries(rows as WorkerSalary[]);
+        const [salaryRows, productionRows] = await Promise.all([
+          getWorkerSalaries(),
+          getProductions()
+        ]);
+
+        if (salaryRows && salaryRows.length > 0) setWorkerSalaries(salaryRows as WorkerSalary[]);
+        if (productionRows) setProductions(productionRows);
+
       } catch (err) {
-        console.error('Failed to fetch worker salaries', err);
+        console.error('Failed to fetch initial data', err);
+        // Fail silently or toast
       }
     })();
   }, []);

@@ -177,20 +177,20 @@ export const getOperationsByProductionId = async (productionId: string) => {
       .from("operations")
       .select("id,name,amount_per_piece")
       .in("id", opIds);
-     if (!masterErr && Array.isArray(masterOps)) {
-       masterOps.forEach((m: any) => { if (m?.id) opMap[m.id] = m; });
-     }
-   }
+    if (!masterErr && Array.isArray(masterOps)) {
+      masterOps.forEach((m: any) => { if (m?.id) opMap[m.id] = m; });
+    }
+  }
 
-   // Merge operation master info into each production_operation row under an `operations` property.
-   return (rows || []).map((r: any) => {
-     const master = r.operation_id ? opMap[r.operation_id] : undefined;
-     return {
-       ...r,
-       operations: master ? { name: master.name, amount_per_piece: master.amount_per_piece } : undefined,
-     };
-   });
- };
+  // Merge operation master info into each production_operation row under an `operations` property.
+  return (rows || []).map((r: any) => {
+    const master = r.operation_id ? opMap[r.operation_id] : undefined;
+    return {
+      ...r,
+      operations: master ? { name: master.name, amount_per_piece: master.amount_per_piece } : undefined,
+    };
+  });
+};
 
 /**
  * Assign worker and set pieces for a production operation.
@@ -208,7 +208,6 @@ export const assignWorkerToOperation = async (
   if (workerId !== undefined) updates.worker_id = workerId || null;
   if (workerName !== undefined) updates.worker_name = workerName || null;
   if (piecesDone !== undefined && piecesDone !== null) updates.pieces_done = piecesDone;
-  updates.updated_at = new Date().toISOString();
 
   const { data, error } = await supabase
     .from("production_operation")
@@ -250,5 +249,19 @@ export const updateProduction = async (id: string, updates: any) => {
   if (error) throw error;
   return data;
 };
+
+/**
+ * Delete a production_operation row
+ */
+export const deleteProductionOperation = async (id: string) => {
+  const { error } = await supabase
+    .from("production_operation")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+  return true;
+};
+
 
 

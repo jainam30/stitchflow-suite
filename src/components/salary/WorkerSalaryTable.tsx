@@ -35,6 +35,7 @@ import { Production } from '@/types/production';
 
 import WorkerOperationDetailDialog, { OperationDetail } from "@/components/salary/WorkerOperationDetailDialog";
 import { getWorkerOperations } from "@/Services/salaryService";
+import { AddWorkerAdvanceDialog } from "./AddWorkerAdvanceDialog";
 // Rely on DB-backed `salaries` and optional `workerName` provided on each salary row
 
 interface WorkerSalaryTableProps {
@@ -53,6 +54,8 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
   const [year, setYear] = useState<string>(new Date().getFullYear().toString());
   const [aggregatedSalaries, setAggregatedSalaries] = useState<any[]>([]);
   const isMobile = useIsMobile();
+  const [advanceOpen, setAdvanceOpen] = useState(false);
+  const [advanceWorkerId, setAdvanceWorkerId] = useState<string>("");
 
   useEffect(() => {
     console.log("Debug salaries:", salaries);
@@ -83,7 +86,8 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
           workerId: salary.workerId,
           workerName: salary.workerName || 'Unknown Worker',
           totalPieces: 0,
-          totalAmount: 0,
+          totalAmount: 0, // This will be Net Amount (Earnings - Advance)
+          totalAdvance: 0,
           operations: [],
           paid: true
         });
@@ -91,7 +95,13 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
 
       const workerData = workerSalaryMap.get(salary.workerId);
       workerData.totalPieces += salary.piecesDone;
-      workerData.totalAmount += salary.totalAmount;
+      // If amount is negative, it's an advance
+      if (salary.totalAmount < 0) {
+        workerData.totalAdvance += Math.abs(salary.totalAmount);
+        workerData.totalAmount += salary.totalAmount; // Net decreases
+      } else {
+        workerData.totalAmount += salary.totalAmount; // Earnings add to net
+      }
       workerData.paid = workerData.paid && salary.paid;
 
       const prodName = productions.find(p => p.id === salary.productId)?.productName || 'Unknown Product';
@@ -278,7 +288,8 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
             <TableRow>
               <TableHead>Worker</TableHead>
               <TableHead className={`${isMobile ? "" : "text-right"}`}>Pieces</TableHead>
-              <TableHead className="text-right">Amount (₹)</TableHead>
+              <TableHead className="text-right">Advance (₹)</TableHead>
+              <TableHead className="text-right">Net Amount (₹)</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -295,6 +306,9 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
                 <TableRow key={workerSalary.workerId}>
                   <TableCell className="font-medium">{workerSalary.workerName}</TableCell>
                   <TableCell className={`${isMobile ? "" : "text-right"}`}>{workerSalary.totalPieces}</TableCell>
+                  <TableCell className="text-right text-red-600">
+                    {workerSalary.totalAdvance > 0 ? `₹${workerSalary.totalAdvance}` : '-'}
+                  </TableCell>
                   <TableCell className="text-right font-medium">₹{workerSalary.totalAmount}</TableCell>
                   <TableCell>
                     <Badge variant={workerSalary.paid ? "success" : "outline"} className={workerSalary.paid ? "bg-green-100 text-green-800" : ""}>
@@ -318,7 +332,16 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
                         >
                           View Details
                         </DropdownMenuItem>
-                        {!workerSalary.paid && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setAdvanceWorkerId(workerSalary.workerId);
+                            setAdvanceOpen(true);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          Add Advance
+                        </DropdownMenuItem>
+                        {(!workerSalary.paid && user?.role === 'admin') && (
                           <DropdownMenuItem
                             onClick={() => markAsPaid(workerSalary.workerId)}
                             className="cursor-pointer"
@@ -346,6 +369,30 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
         onClose={() => setDetailOpen(false)}
         operations={detailOperations}
         workerName={detailWorkerName}
+        onUpdate={() => detailWorkerName && openDetails(detailWorkerName)}
+      />
+
+      <AddWorkerAdvanceDialog
+        open={advanceOpen}
+        onOpenChange={setAdvanceOpen}
+        workerId={advanceWorkerId}
+        onSaved={(newRecord) => {
+          if (newRecord) {
+            const mapped: WorkerSalary = {
+              id: newRecord.id,
+              workerId: newRecord.worker_id,
+              workerName: aggregatedSalaries.find(s => s.workerId === newRecord.worker_id)?.workerName,
+              productId: "",
+              date: newRecord.date,
+              operationId: "",
+              piecesDone: newRecord.pieces_done || 0,
+              amountPerPiece: 0,
+              totalAmount: newRecord.total_amount,
+              paid: false
+            };
+            setSalaries(prev => [...prev, mapped]);
+          }
+        }}
       />
     </div>
   );

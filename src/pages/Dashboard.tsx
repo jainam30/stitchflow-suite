@@ -99,6 +99,9 @@ const Dashboard: React.FC = () => {
 
       {/* SUMMARY CARDS */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+
+
         {/* WORKERS CARD */}
         <Card className="dashboard-card border-t-4 border-t-primary shadow-md hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -151,13 +154,14 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* PAYMENTS / WORKER OPS TODAY */}
-        <Card className="dashboard-card border-t-4 border-t-red-500 shadow-md hover:shadow-lg transition-all">
+        {/* PAYMENTS (Admin) / TODAY’S OPERATIONS (Others) */}
+        <Card className={`dashboard-card border-t-4 shadow-md hover:shadow-lg transition-all 
+          ${isAdmin ? "border-t-red-500" : "border-t-purple-500"}`}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               {isAdmin ? "Payments Pending" : "Today's Operations"}
             </CardTitle>
-            <div className="bg-red-100 p-2 rounded-full text-red-500">
+            <div className={`p-2 rounded-full ${isAdmin ? "bg-red-100 text-red-500" : "bg-purple-100 text-purple-500"}`}>
               <BarChart size={18} />
             </div>
           </CardHeader>
@@ -166,7 +170,7 @@ const Dashboard: React.FC = () => {
               {isAdmin ? `₹${pendingPayments}` : workersOpsToday}
             </div>
             <p className="text-xs text-muted-foreground">
-              {isAdmin ? "Pending salary payments" : "Across your tasks today"}
+              {isAdmin ? "Pending salary payments" : "Across all tasks today"}
             </p>
           </CardContent>
         </Card>

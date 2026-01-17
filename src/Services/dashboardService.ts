@@ -34,7 +34,7 @@ export const getDashboardData = async (userId?: string | null, isAdmin = false) 
         // WORKERS
         const { data: allWorkers } = await supabase.from("workers").select("id,name");
         const totalWorkers = (allWorkers || []).length;
-        const activeWorkers = (allWorkers || []).filter((w:any) => w?.is_active ?? true).length;
+        const activeWorkers = (allWorkers || []).filter((w: any) => w?.is_active ?? true).length;
 
         // PRODUCTS
         let activeProducts = 0;
@@ -46,26 +46,52 @@ export const getDashboardData = async (userId?: string | null, isAdmin = false) 
         }
 
         // TODAY'S PRODUCTION (sum of pieces_done on production_operation for today)
-        const todayStr = new Date().toISOString().split("T")[0];
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+        const todayStart = startOfDay.toISOString();
+        const todayEnd = endOfDay.toISOString();
+
         const { data: todaysOps } = await supabase
             .from("production_operation")
             .select("pieces_done")
-            .gte("date", todayStr)
-            .lt("date", new Date(new Date().setDate(new Date().getDate() + 1)).toISOString());
-        const todaysProduction = (todaysOps || []).reduce((s:any, r:any) => s + Number(r.pieces_done ?? 0), 0);
+            .gte("created_at", todayStart) // Use created_at (timestamp) if available, falling back to date logic if needed
+            .lt("created_at", todayEnd);
+
+        // Fallback: If production_operation uses 'date' column (date only), the query above on created_at is better if created_at exists and is correct.
+        // Checking productionService, it inserts 'created_at'.
+        // However, existing code used 'date'. Let's check if 'date' column is Date or Timestamp.
+        // productionService inserts 'date': new Date().toISOString().split("T")[0].
+        // If we want accurate "Today" checks, we should query 'created_at' which is full timestamp.
+        // Reverting to use 'created_at' for accuracy if the table supports it. 
+        // Based on productionService.ts line 145: created_at: new Date().toISOString()
+        // So created_at is available and is a timestamp.
+
+        const todaysProduction = (todaysOps || []).reduce((s: any, r: any) => s + Number(r.pieces_done ?? 0), 0);
 
         // PENDING PAYMENTS (sum of unpaid worker_salaries.total_amount)
         const { data: unpaidRows } = await supabase
             .from("worker_salaries")
             .select("total_amount")
             .eq("paid", false);
-        const pendingPayments = (unpaidRows || []).reduce((s:any, r:any) => s + Number(r.total_amount ?? 0), 0);
+        const pendingPayments = (unpaidRows || []).reduce((s: any, r: any) => s + Number(r.total_amount ?? 0), 0);
 
-        // WORKER OPS TODAY (count) - if not admin filter by worker_id === userId
-        const opsQuery = supabase.from("worker_salaries").select("id").gte("date", todayStr).lt("date", new Date(new Date().setDate(new Date().getDate() + 1)).toISOString());
-        if (!isAdmin && userId) opsQuery.eq("worker_id", userId);
-        const { data: opsToday } = await opsQuery;
-        const workersOpsToday = (opsToday || []).length;
+        // WORKER OPS TODAY (count of production_operation rows created today)
+        const opsQuery = supabase
+            .from("production_operation")
+            .select("id", { count: 'exact', head: true })
+            .gte("created_at", todayStart)
+            .lt("created_at", todayEnd);
+
+        // Request is for "count of operation across all production", so we do NOT filter by user.
+        // Request is for "count of operation across all production", so we do NOT filter by user.
+        // This ensures Supervisors (who are not Admins but also not Workers performing the ops) see the global count.
+        // if (!isAdmin && userId) { opsQuery.eq("worker_id", userId); }
+
+        const { count: workOpsCount } = await opsQuery;
+        const workersOpsToday = workOpsCount || 0;
+
 
         // PRODUCTION PROGRESS: compute percentage per active production (pieces completed / total_quantity)
         const { data: productions } = await supabase
@@ -73,28 +99,28 @@ export const getDashboardData = async (userId?: string | null, isAdmin = false) 
             .select("id,product_id,total_quantity")
             .order("created_at", { ascending: false });
         // Map production id -> pieces completed (from production_operation)
-        const productionIds = (productions || []).map((p:any) => p.id).filter(Boolean);
+        const productionIds = (productions || []).map((p: any) => p.id).filter(Boolean);
         let progressMap: Record<string, number> = {};
         if (productionIds.length > 0) {
             const { data: opAggregates } = await supabase
                 .from("production_operation")
                 .select("production_id, pieces_done")
                 .in("production_id", productionIds);
-            (opAggregates || []).forEach((r:any) => {
+            (opAggregates || []).forEach((r: any) => {
                 if (!r || !r.production_id) return;
                 progressMap[r.production_id] = (progressMap[r.production_id] || 0) + Number(r.pieces_done || 0);
             });
         }
 
         // fetch product names for display
-        const productIds = Array.from(new Set((productions || []).map((p:any) => p.product_id).filter(Boolean)));
-        let productMap: Record<string,string> = {};
+        const productIds = Array.from(new Set((productions || []).map((p: any) => p.product_id).filter(Boolean)));
+        let productMap: Record<string, string> = {};
         if (productIds.length > 0) {
             const { data: prods } = await supabase.from("products").select("id,name").in("id", productIds);
-            (prods || []).forEach((p:any) => { if (p?.id) productMap[p.id] = p.name; });
+            (prods || []).forEach((p: any) => { if (p?.id) productMap[p.id] = p.name; });
         }
 
-        const productionProgress = (productions || []).map((p:any) => {
+        const productionProgress = (productions || []).map((p: any) => {
             const total = Number(p.total_quantity ?? 0);
             const completed = Number(progressMap[p.id] ?? 0);
             const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -115,9 +141,9 @@ export const getDashboardData = async (userId?: string | null, isAdmin = false) 
         const recent = (recentRows || []);
 
         // collect worker/operation/product ids for lookups
-        const workerIds = Array.from(new Set(recent.map((r:any) => r.worker_id).filter(Boolean)));
-        const opIds = Array.from(new Set(recent.map((r:any) => r.operation_id).filter(Boolean)));
-        const recentProdIds = Array.from(new Set(recent.map((r:any) => r.product_id).filter(Boolean)));
+        const workerIds = Array.from(new Set(recent.map((r: any) => r.worker_id).filter(Boolean)));
+        const opIds = Array.from(new Set(recent.map((r: any) => r.operation_id).filter(Boolean)));
+        const recentProdIds = Array.from(new Set(recent.map((r: any) => r.product_id).filter(Boolean)));
 
         // fetch lookups
         const [workersLookup, opsLookup, productsLookup] = await Promise.all([
@@ -126,16 +152,16 @@ export const getDashboardData = async (userId?: string | null, isAdmin = false) 
             recentProdIds.length ? supabase.from("products").select("id,name").in("id", recentProdIds) : { data: [] },
         ]);
 
-        const workerMap: Record<string,any> = {};
-        (workersLookup.data || []).forEach((w:any) => { if (w?.id) workerMap[w.id] = w; });
+        const workerMap: Record<string, any> = {};
+        (workersLookup.data || []).forEach((w: any) => { if (w?.id) workerMap[w.id] = w; });
 
-        const opMap: Record<string,any> = {};
-        (opsLookup.data || []).forEach((o:any) => { if (o?.id) opMap[o.id] = o; });
+        const opMap: Record<string, any> = {};
+        (opsLookup.data || []).forEach((o: any) => { if (o?.id) opMap[o.id] = o; });
 
-        const prodMap: Record<string,any> = {};
-        (productsLookup.data || []).forEach((p:any) => { if (p?.id) prodMap[p.id] = p; });
+        const prodMap: Record<string, any> = {};
+        (productsLookup.data || []).forEach((p: any) => { if (p?.id) prodMap[p.id] = p; });
 
-        const recentWorkerOps: RecentOperationItem[] = recent.map((r:any) => ({
+        const recentWorkerOps: RecentOperationItem[] = recent.map((r: any) => ({
             id: r.id,
             workerId: r.worker_id ?? null,
             workerName: r.worker_id ? (workerMap[r.worker_id]?.name ?? r.worker_id) : null,

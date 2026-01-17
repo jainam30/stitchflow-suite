@@ -37,6 +37,7 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentStep, setCurrentStep] = useState<string>("basic");
 
   const {
     register,
@@ -45,7 +46,9 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
     reset,
     watch,
     setValue,       // ✅ FIX: get setValue from react-hook-form
+    trigger,        // For validation
   } = useForm<WorkerFormData>({
+    mode: "onChange",
     defaultValues: {
       name: "",
       workerId: "",
@@ -67,7 +70,37 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
     },
   });
 
+  // Reset form and step when dialog closes
+  React.useEffect(() => {
+    if (open) {
+      setCurrentStep("basic");
+    } else {
+      reset();
+      setCurrentStep("basic");
+    }
+  }, [open, reset]);
+
   const accountNumber = watch("accountNumber");
+
+  // Validate current step before proceeding
+  const validateCurrentStep = async () => {
+    let fieldsToValidate: (keyof WorkerFormData)[] = [];
+
+    switch (currentStep) {
+      case "basic":
+        fieldsToValidate = ["name", "mobileNumber", "currentAddress", "permanentAddress"];
+        break;
+      case "documents":
+        fieldsToValidate = ["idProof"];
+        break;
+      case "bank":
+        fieldsToValidate = ["bankName", "accountNumber", "confirmAccountNumber", "ifscCode", "accountHolderName"];
+        break;
+    }
+
+    const isValid = await trigger(fieldsToValidate);
+    return isValid;
+  };
 
   const onSubmit = async (data: WorkerFormData) => {
     if (data.accountNumber !== data.confirmAccountNumber) {
@@ -152,19 +185,19 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 py-4">
-          <Tabs defaultValue="basic">
-            <TabsList className="grid grid-cols-3 mb-6">
-              <TabsTrigger value="basic">
+          <Tabs value={currentStep} onValueChange={setCurrentStep}>
+            <TabsList className="grid grid-cols-3 mb-6 pointer-events-none">
+              <TabsTrigger value="basic" className="pointer-events-none">
                 <User className="mr-2 h-4 w-4" />
                 Basic Info
               </TabsTrigger>
 
-              <TabsTrigger value="documents">
+              <TabsTrigger value="documents" className="pointer-events-none">
                 <FileImage className="mr-2 h-4 w-4" />
                 Documents
               </TabsTrigger>
 
-              <TabsTrigger value="bank">
+              <TabsTrigger value="bank" className="pointer-events-none">
                 <Banknote className="mr-2 h-4 w-4" />
                 Bank Details
               </TabsTrigger>
@@ -184,26 +217,26 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label>Full Name *</Label>
-                  <Input placeholder="Ex: Ramesh Patel"{...register("name", { required: true })} />
-                  <p className="text-xs text-muted-foreground mt-1">Enter worker's full legal name</p>
-
+                  <Input placeholder="Ex: Ramesh Patel"{...register("name", { required: "Name is required" })} />
+                  {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
                 </div>
 
                 <div>
                   <Label>Mobile Number *</Label>
-                  <Input placeholder="9876543210" {...register("mobileNumber", { required: true })} />
-                  <p className="text-xs text-muted-foreground mt-1">10-digit phone number</p>
+                  <Input placeholder="9876543210" {...register("mobileNumber", { required: "Mobile number is required" })} />
+                  {errors.mobileNumber && <p className="text-xs text-destructive mt-1">{errors.mobileNumber.message}</p>}
                 </div>
 
                 <div className="md:col-span-2">
                   <Label>Current Address *</Label>
-                  <Input placeholder="Full current living address"{...register("currentAddress", { required: true })} />
-
+                  <Input placeholder="Full current living address"{...register("currentAddress", { required: "Current address is required" })} />
+                  {errors.currentAddress && <p className="text-xs text-destructive mt-1">{errors.currentAddress.message}</p>}
                 </div>
 
                 <div className="md:col-span-2">
                   <Label>Permanent Address *</Label>
-                  <Input placeholder="Permanent home address"{...register("permanentAddress", { required: true })} />
+                  <Input placeholder="Permanent home address"{...register("permanentAddress", { required: "Permanent address is required" })} />
+                  {errors.permanentAddress && <p className="text-xs text-destructive mt-1">{errors.permanentAddress.message}</p>}
                 </div>
 
                 <div className="md:col-span-2">
@@ -217,7 +250,8 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
             <TabsContent value="documents" className="space-y-6">
               <div>
                 <Label>ID Proof Number *</Label>
-                <Input placeholder="Aadhar / PAN / Voter ID Number"{...register("idProof", { required: true })} />
+                <Input placeholder="Aadhar / PAN / Voter ID Number"{...register("idProof", { required: "ID proof number is required" })} />
+                {errors.idProof && <p className="text-xs text-destructive mt-1">{errors.idProof.message}</p>}
               </div>
 
               <div>
@@ -237,31 +271,36 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Bank Name *</Label>
-                  <Input placeholder="Ex: SBI, HDFC"{...register("bankName", { required: true })} />
+                  <Input placeholder="Ex: SBI, HDFC"{...register("bankName", { required: "Bank name is required" })} />
+                  {errors.bankName && <p className="text-xs text-destructive mt-1">{errors.bankName.message}</p>}
                 </div>
 
                 <div>
                   <Label>Account Number *</Label>
-                  <Input placeholder="Bank account number"{...register("accountNumber", { required: true })} />
+                  <Input placeholder="Bank account number"{...register("accountNumber", { required: "Account number is required" })} />
+                  {errors.accountNumber && <p className="text-xs text-destructive mt-1">{errors.accountNumber.message}</p>}
                 </div>
 
                 <div>
                   <Label>Confirm Account Number *</Label>
                   <Input placeholder="Re-enter account number"
-                    {...register("confirmAccountNumber", { required: true })}
+                    {...register("confirmAccountNumber", { required: "Please confirm account number" })}
                   />
+                  {errors.confirmAccountNumber && <p className="text-xs text-destructive mt-1">{errors.confirmAccountNumber.message}</p>}
                 </div>
 
                 <div>
                   <Label>IFSC Code *</Label>
-                  <Input placeholder="Ex: SBIN0001234"{...register("ifscCode", { required: true })} />
+                  <Input placeholder="Ex: SBIN0001234"{...register("ifscCode", { required: "IFSC code is required" })} />
+                  {errors.ifscCode && <p className="text-xs text-destructive mt-1">{errors.ifscCode.message}</p>}
                 </div>
 
                 <div>
                   <Label>Account Holder Name *</Label>
                   <Input placeholder="Name as per bank account"
-                    {...register("accountHolderName", { required: true })}
+                    {...register("accountHolderName", { required: "Account holder name is required" })}
                   />
+                  {errors.accountHolderName && <p className="text-xs text-destructive mt-1">{errors.accountHolderName.message}</p>}
                 </div>
 
                 <div className="md:col-span-2">
@@ -283,22 +322,67 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
             </TabsContent>
           </Tabs>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                reset();
-                onOpenChange(false);
-              }}
-            >
-              Cancel
-            </Button>
+          <div className="flex justify-between gap-3">
+            <div>
+              {currentStep !== "basic" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const steps = ["basic", "documents", "bank"];
+                    const currentIndex = steps.indexOf(currentStep);
+                    if (currentIndex > 0) {
+                      setCurrentStep(steps[currentIndex - 1]);
+                    }
+                  }}
+                >
+                  Previous
+                </Button>
+              )}
+            </div>
 
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Worker"}
-            </Button>
-          </DialogFooter>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  reset();
+                  onOpenChange(false);
+                }}
+              >
+                Cancel
+              </Button>
+
+              {currentStep !== "bank" ? (
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    const isValid = await validateCurrentStep();
+                    if (!isValid) {
+                      toast({
+                        title: "Validation Error",
+                        description: "Please fill all required fields correctly before proceeding.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    const steps = ["basic", "documents", "bank"];
+                    const currentIndex = steps.indexOf(currentStep);
+                    if (currentIndex < steps.length - 1) {
+                      setCurrentStep(steps[currentIndex + 1]);
+                    }
+                  }}
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Save Worker"}
+                </Button>
+              )}
+            </div>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
