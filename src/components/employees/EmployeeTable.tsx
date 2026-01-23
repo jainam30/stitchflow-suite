@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { EmployeeDetailsSheet } from './EmployeeDetailsSheet';
+import { EditEmployeeDialog } from './EditEmployeeDialog';
 
 interface EmployeeTableProps {
   employees: Employee[];
@@ -16,8 +17,8 @@ interface EmployeeTableProps {
   onUpdateEmployee: (id: string, updatedEmployee: Partial<Employee>) => void;
 }
 
-export const EmployeeTable: React.FC<EmployeeTableProps> = ({ 
-  employees, 
+export const EmployeeTable: React.FC<EmployeeTableProps> = ({
+  employees,
   onToggleStatus,
   onUpdateEmployee
 }) => {
@@ -27,6 +28,9 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
 
   // ⭐ NEW: readOnly flag
   const [readOnly, setReadOnly] = useState(false);
+
+  // ⭐ NEW: Edit Dialog state
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const handleToggle = (employee: Employee) => {
     onToggleStatus(employee.id);
@@ -48,8 +52,7 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   // ⭐ Edit (EDITABLE)
   const handleEditClick = (employee: Employee) => {
     setSelectedEmployee(employee);
-    setReadOnly(false);     // EDIT = NOT READ ONLY
-    setIsDetailsSheetOpen(true);
+    setIsEditOpen(true); // Open DIALOG, not Sheet
   };
 
   if (employees.length === 0) {
@@ -97,7 +100,7 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
 
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Switch 
+                      <Switch
                         checked={employee.isActive}
                         onCheckedChange={() => handleToggle(employee)}
                       />
@@ -126,13 +129,13 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                       </Button>
 
                       {/* ACTIVE / INACTIVE */}
-                      <Button 
-                        variant={employee.isActive ? "outline" : "default"} 
+                      <Button
+                        variant={employee.isActive ? "outline" : "default"}
                         size="icon"
                         onClick={() => handleToggle(employee)}
                       >
-                        {employee.isActive ? 
-                          <UserX className="h-4 w-4" /> : 
+                        {employee.isActive ?
+                          <UserX className="h-4 w-4" /> :
                           <UserCheck className="h-4 w-4" />
                         }
                       </Button>
@@ -145,13 +148,19 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
         </Table>
       </div>
 
-      <EmployeeDetailsSheet 
+      <EmployeeDetailsSheet
         open={isDetailsSheetOpen}
         onOpenChange={setIsDetailsSheetOpen}
         employee={selectedEmployee}
         onUpdateEmployee={onUpdateEmployee}
+        readOnly={readOnly}
+      />
 
-        readOnly={readOnly}  // ⭐ IMPORTANT
+      <EditEmployeeDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        employee={selectedEmployee}
+        onUpdateEmployee={onUpdateEmployee}
       />
     </>
   );

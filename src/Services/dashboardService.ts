@@ -8,6 +8,7 @@ import { supabase } from "@/Config/supabaseClient";
 export interface ProductionProgressItem {
     id: string;
     productName: string;
+    po_number: string;
     progress: number; // percentage
     totalQuantity: number;
     completedPieces: number;
@@ -96,7 +97,7 @@ export const getDashboardData = async (userId?: string | null, isAdmin = false) 
         // PRODUCTION PROGRESS: compute percentage per active production (pieces completed / total_quantity)
         const { data: productions } = await supabase
             .from("production")
-            .select("id,product_id,total_quantity")
+            .select("id,product_id,total_quantity,po_number")
             .order("created_at", { ascending: false });
         // Map production id -> pieces completed (from production_operation)
         const productionIds = (productions || []).map((p: any) => p.id).filter(Boolean);
@@ -127,6 +128,7 @@ export const getDashboardData = async (userId?: string | null, isAdmin = false) 
             return {
                 id: p.id,
                 productName: productMap[p.product_id] ?? `Prod ${p.id}`,
+                po_number: p.po_number || "N/A",
                 progress: Math.min(Math.max(percent, 0), 100),
             } as ProductionProgressItem;
         });

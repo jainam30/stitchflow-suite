@@ -24,23 +24,21 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
 }) => {
 
   const normalizedWorker = {
-  ...worker,
-  profile_image_url: worker.profileImageUrl,
-  id_proof_image_url: worker.idProofImageUrl,
-  bank_image_url: worker.bankImageUrl,
-};
+    ...worker,
+    profile_image_url: worker.profileImageUrl,
+    id_proof_image_url: worker.idProofImageUrl,
+    bank_image_url: worker.bankImageUrl,
+  };
 
   // 🔥 FIX: Normalize keys — workerService returns camelCase
-  const profileImage = worker.profileImageUrl 
-  const idProofImage = worker.idProofImageUrl 
+  const profileImage = worker.profileImageUrl
+  const idProofImage = worker.idProofImageUrl
   const bankImage = worker.bankImageUrl
   const workerId = worker.workerId || worker.worker_code;
   const mobile = worker.mobileNumber || worker.mobileNumber;
   const emergency = worker.emergencyNumber || worker.emergencyNumber;
-
   const currentAddr = worker.currentAddress || worker.currentAddress;
   const permanentAddr = worker.permanentAddress || worker.permanentAddress;
-
   const idProofNo = worker.idProof || worker.idProof;
 
   return (
@@ -52,7 +50,7 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
             Detailed information about {worker.name}
           </SheetDescription>
         </SheetHeader>
-        
+
         <Tabs defaultValue="basic" className="py-4">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="basic" className="flex-1">Basic Info</TabsTrigger>
@@ -60,8 +58,8 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
             <TabsTrigger value="documents" className="flex-1">Documents</TabsTrigger>
             <TabsTrigger value="bank" className="flex-1">Bank Details</TabsTrigger>
           </TabsList>
-          
-          
+
+
           {/* BASIC INFO */}
           <TabsContent value="basic" className="space-y-6">
             <div className="space-y-1">
@@ -76,7 +74,7 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
                   />
                 </div>
               )}
-              
+
               <h4 className="text-sm font-medium text-muted-foreground">Basic Information</h4>
               <Separator className="my-2" />
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -93,7 +91,7 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
                 <div>{format(worker.createdAt, 'dd MMM yyyy')}</div>
               </div>
             </div>
-            
+
             <div className="space-y-1">
               <h4 className="text-sm font-medium text-muted-foreground">Contact Information</h4>
               <Separator className="my-2" />
@@ -106,7 +104,7 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
               </div>
             </div>
           </TabsContent>
-          
+
           {/* ADDRESS TAB */}
           <TabsContent value="address" className="space-y-6">
             <div className="space-y-1">
@@ -114,13 +112,13 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
               <Separator className="my-2" />
               <div className="text-sm">{currentAddr || 'Not provided'}</div>
             </div>
-            
+
             <div className="space-y-1">
               <h4 className="text-sm font-medium text-muted-foreground">Permanent Address</h4>
               <Separator className="my-2" />
               <div className="text-sm">{permanentAddr || 'Not provided'}</div>
             </div>
-            
+
             {worker.address && (
               <div className="space-y-1">
                 <h4 className="text-sm font-medium text-muted-foreground">Alternate Address</h4>
@@ -129,7 +127,7 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
               </div>
             )}
           </TabsContent>
-          
+
           {/* DOCUMENTS TAB */}
           <TabsContent value="documents" className="space-y-6">
             <div className="space-y-1">
@@ -140,7 +138,7 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
                 <div>{idProofNo}</div>
               </div>
             </div>
-            
+
             {/* 🔥 FIX: Correct ID document field */}
             {idProofImage && (
               <div className="space-y-1">
@@ -156,7 +154,7 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
               </div>
             )}
           </TabsContent>
-          
+
           {/* BANK TAB */}
           <TabsContent value="bank" className="space-y-6">
             <div className="space-y-1">
