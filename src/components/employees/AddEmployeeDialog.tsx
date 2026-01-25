@@ -22,8 +22,8 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 const formSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   employeeId: z.string().min(3, "EMP ID must be at least 3 characters"),
-  address: z.string().min(5, "Address must be at least 5 characters"),
   permanentAddress: z.string().optional().nullable(),
+  currentAddress: z.string().optional().nullable(),
   email: z.string().email("Invalid email address").optional().nullable(),
   mobileNumber: z.string().min(10, "Mobile number must be at least 10 digits"),
   emergencyNumber: z.string().min(10, "Emergency number must be at least 10 digits"),
@@ -39,6 +39,7 @@ const formSchema = z.object({
   bankName: z.string().min(1, "Bank name is required"),
   accountHolderName: z.string().min(1, "Account holder name is required"),
   bankAccountDetail: z.string().min(5, "Bank account details must be at least 5 characters"),
+  bankname: z.string().min(1, "Bank name is required"),
   accountNumber: z.string().min(1, "Account number is required"),
   confirmAccountNumber: z.string().min(1, "Please confirm account number"),
   ifscCode: z.string().min(1, "IFSC code is required"),
@@ -79,8 +80,8 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
     defaultValues: {
       name: "",
       employeeId: "",
-      address: "",
       permanentAddress: "",
+      currentAddress: "",
       email: "",
       profileImage: null,
       mobileNumber: "",
@@ -91,6 +92,7 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
       bankName: "",
       accountHolderName: "",
       bankAccountDetail: "",
+      bankname: "",
       accountNumber: "",
       confirmAccountNumber: "",
       ifscCode: "",
@@ -122,7 +124,7 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
         fieldsToValidate = ["name", "employeeId", "mobileNumber", "emergencyNumber"];
         break;
       case "address":
-        fieldsToValidate = ["address"];
+        fieldsToValidate = ["currentAddress"];
         break;
       case "documents":
         fieldsToValidate = ["idProof"];
@@ -158,13 +160,18 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
           {
             name: values.name,
             employee_code: values.employeeId, // EMP ID
-            address: values.address,           // store in `address` column
+            email: values.email,
+            current_address: values.currentAddress,           // store in `address` column
             permanent_address: values.permanentAddress,
             mobile_number: values.mobileNumber,
             emergency_number: values.emergencyNumber,
             id_proof: values.idProof,
             id_proof_image_url: idProofUrl,
             bank_account_detail: values.bankAccountDetail,
+            bankname: values.bankname,
+            bank_account_number: values.accountNumber,
+            bank_ifsc_code: values.ifscCode,
+            bank_account_holder_name: values.accountHolderName,
             bank_image_url: bankUrl,
             salary_amount: values.salary,
             is_active: values.isActive,
@@ -427,13 +434,13 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
                 </div>
               </TabsContent>
 
-              <TabsContent value="address" className="space-y-4">
+              <TabsContent value="currentAddress" className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="address"
+                  name="currentAddress"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address *</FormLabel>
+                      <FormLabel>Current Address *</FormLabel>
                       <FormControl>
                         <Textarea placeholder="Current residential address" {...field} />
                       </FormControl>
@@ -521,7 +528,7 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="bankName"
+                    name="bankname"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Bank Name *</FormLabel>

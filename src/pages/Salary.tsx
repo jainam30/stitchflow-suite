@@ -132,7 +132,7 @@ const Salary: React.FC = () => {
   const renderActionButtons = () => {
     if (activeTab === "workers") {
       return (
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* ... existing worker buttons ... */}
           <Button
             variant="outline"
@@ -156,9 +156,9 @@ const Salary: React.FC = () => {
       );
     } else if (activeTab === "employees" && isAdmin) {
       return (
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* MONTH / YEAR SELECTORS IN HEADER */}
-          <div className="flex items-center gap-2 mr-2">
+          <div className="flex items-center gap-2">
             <select
               className="h-9 w-[120px] rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               value={employeeMonth}
@@ -204,26 +204,23 @@ const Salary: React.FC = () => {
     return null;
   };
 
-
-
-  // Desktop view logic continues...
-  // ...
-
-  // To fix the mobile/desktop split correctly I should replace the Desktop return:
+  // Main return for both mobile and desktop - responsive design handles both
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Salary Management</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Salary Management</h1>
       </div>
 
       <Tabs defaultValue="workers" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
           <TabsList>
             <TabsTrigger value="workers">Workers Salary</TabsTrigger>
             {isAdmin && <TabsTrigger value="employees">Employees Salary</TabsTrigger>}
           </TabsList>
 
-          {renderActionButtons()}
+          <div className="w-full sm:w-auto">
+            {renderActionButtons()}
+          </div>
         </div>
 
         <TabsContent value="workers" className="space-y-4">

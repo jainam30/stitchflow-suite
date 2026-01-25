@@ -40,7 +40,6 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
     defaultValues: {
       name: '',
       employeeId: '',
-      address: '',
       permanentAddress: '',
       currentAddress: '',
       mobileNumber: '',
@@ -61,7 +60,6 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
     form.reset({
       name: employee.name || '',
       employeeId: (employee.employeeId as string) || '',
-      address: (employee.address as string) || '',
       permanentAddress: (employee.permanentAddress as string) || '',
       currentAddress: (employee.currentAddress as string) || '',
       mobileNumber: (employee.mobileNumber as string) || '',
@@ -97,7 +95,6 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
       const updatedEmployee: Partial<Employee> = {
         name: data.name,
         employeeId: data.employeeId,
-        address: data.address,
         permanentAddress: data.permanentAddress,
         currentAddress: data.currentAddress,
         mobileNumber: data.mobileNumber,
@@ -271,7 +268,7 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                       </FormItem>
                     )}
                   />
-                  
+
                 </div>
               </div>
 

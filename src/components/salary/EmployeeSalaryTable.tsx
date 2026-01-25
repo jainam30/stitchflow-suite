@@ -135,7 +135,7 @@ export const EmployeeSalaryTable: React.FC<EmployeeSalaryTableProps> = ({ month,
 
       {/* Selector removed from here, controlled by parent */}
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
