@@ -101,7 +101,6 @@ const Employees: React.FC = () => {
             Add Employee
           </Button>
         </div>
-
       </div>
 
       <Card>

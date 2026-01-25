@@ -171,6 +171,9 @@ export const getWorkerOperations = async (workerId: string, month?: number, year
             pieces,
             ratePerPiece: rate,
             total,
+            // ID fields needed for update/delete
+            workerId: r.worker_id,
+            operationId: r.operation_id, // master operation ID
         };
     });
 };
