@@ -9,8 +9,10 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { Product, Operation } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Plus, Package } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { uploadPatternImage } from "@/Services/productService";
 
 interface EditProductSheetProps {
   open: boolean;
@@ -46,7 +48,9 @@ type FormValues = z.infer<typeof formSchema>;
 
 export const EditProductSheet: React.FC<EditProductSheetProps> = ({ open, onOpenChange, product, onUpdateProduct }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [patternImagePreview, setPatternImagePreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -111,7 +115,9 @@ export const EditProductSheet: React.FC<EditProductSheetProps> = ({ open, onOpen
       };
 
       if (data.patternImage) {
-        updatedProduct.pattern_image_url = URL.createObjectURL(data.patternImage);
+        toast({ title: "Uploading...", description: "Uploading pattern image" });
+        const imageUrl = await uploadPatternImage(data.patternImage);
+        if (imageUrl) updatedProduct.pattern_image_url = imageUrl;
       }
 
       // operations array (map to DB shape)
@@ -120,10 +126,12 @@ export const EditProductSheet: React.FC<EditProductSheetProps> = ({ open, onOpen
         name: op.name,
         operation_code: op.operation_code,
         amount_per_piece: op.amount_per_piece,
-        product_id: product.id
+        product_id: product.id,
+        entered_by: user?.name ?? user?.email ?? user?.id ?? "system",
       }));
 
-      onUpdateProduct(product.id, updatedProduct, operations);
+      setIsSubmitting(true);
+      await onUpdateProduct(product.id, updatedProduct, operations);
 
       toast({
         title: "Product updated",
@@ -138,6 +146,8 @@ export const EditProductSheet: React.FC<EditProductSheetProps> = ({ open, onOpen
         description: err?.message || "Failed to update product",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -255,7 +265,10 @@ export const EditProductSheet: React.FC<EditProductSheetProps> = ({ open, onOpen
 
             <SheetFooter className="mt-6 flex justify-between sm:justify-between">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}><X className="mr-1 h-4 w-4" /> Cancel</Button>
-              <Button type="submit"><Check className="mr-1 h-4 w-4" /> Save Changes</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                <Check className="mr-1 h-4 w-4" />
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
             </SheetFooter>
           </form>
         </Form>

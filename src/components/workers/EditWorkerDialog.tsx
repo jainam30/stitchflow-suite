@@ -96,7 +96,7 @@ export const EditWorkerDialog: React.FC<EditWorkerDialogProps> = ({
                   />
 
                   <div className="font-medium">Created By</div>
-                  <div className="capitalize">{worker.createdBy}</div>
+                  <div className="capitalize">{worker.createdBy || '—'}</div>
 
                   <div className="font-medium">Created On</div>
                   <div>{format(new Date(worker.createdAt), 'dd MMM yyyy')}</div>

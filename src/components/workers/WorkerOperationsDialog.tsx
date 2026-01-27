@@ -37,6 +37,7 @@ interface WorkerOperation {
   ratePerPiece: number;
   totalEarning: number;
   poNumber: string;
+  enteredBy?: string;
 }
 
 interface WorkerOperationsDialogProps {
@@ -202,6 +203,7 @@ export const WorkerOperationsDialog: React.FC<WorkerOperationsDialogProps> = ({
                     <TableHead className="text-right">Pieces</TableHead>
                     <TableHead className="text-right">Rate</TableHead>
                     <TableHead className="text-right">Earning</TableHead>
+                    <TableHead>Entered By</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -225,6 +227,7 @@ export const WorkerOperationsDialog: React.FC<WorkerOperationsDialogProps> = ({
                         <TableCell className="text-right">{op.piecesDone}</TableCell>
                         <TableCell className="text-right">₹{op.ratePerPiece}</TableCell>
                         <TableCell className="text-right font-semibold">₹{op.totalEarning}</TableCell>
+                        <TableCell>{op.enteredBy || "—"}</TableCell>
                       </TableRow>
                     ))
                   )}

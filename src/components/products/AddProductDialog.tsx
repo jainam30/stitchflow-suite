@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Package, Plus, X } from 'lucide-react';
 import { uploadPatternImage, createProduct } from "@/Services/productService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
@@ -44,6 +45,7 @@ interface Props {
 
 export const AddProductDialog: React.FC<Props> = ({ open, onOpenChange, onAddProduct }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [patternImagePreview, setPatternImagePreview] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
@@ -79,7 +81,7 @@ export const AddProductDialog: React.FC<Props> = ({ open, onOpenChange, onAddPro
         material_cost: values.material_cost,
         thread_cost: values.thread_cost,
         other_costs: values.other_costs,
-        created_by: "admin",
+        created_by: user?.id ?? "admin",
         is_active: true,
       };
 
@@ -87,6 +89,7 @@ export const AddProductDialog: React.FC<Props> = ({ open, onOpenChange, onAddPro
         name: op.name,
         operation_code: op.operation_code,
         amount_per_piece: op.amount_per_piece,
+        entered_by: user?.name ?? user?.email ?? user?.id ?? "system",
       }));
 
       const product = await createProduct(productRow, operations);

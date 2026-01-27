@@ -53,9 +53,12 @@ export async function insertWorker(worker: any) {
     .from("workers")
     .insert([worker])
     .select()
-    .select();
+    .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error inserting worker into DB:", error);
+    throw error;
+  }
   return data;
 }
 

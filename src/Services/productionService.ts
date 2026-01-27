@@ -172,12 +172,16 @@ export const assignWorkerToOperation = async (
   operationRecordId: string,
   workerId: string | null,
   piecesDone: number | null,
-  workerName?: string
+  workerName?: string,
+  enteredBy?: string,
+  earnings?: number
 ) => {
   const updates: any = {};
   if (workerId !== undefined) updates.worker_id = workerId || null;
   if (workerName !== undefined) updates.worker_name = workerName || null;
   if (piecesDone !== undefined && piecesDone !== null) updates.pieces_done = piecesDone;
+  if (enteredBy !== undefined) updates.entered_by = enteredBy;
+  if (earnings !== undefined) updates.earnings = earnings;
 
   const { data, error } = await supabase
     .from("production_operation")
@@ -194,7 +198,7 @@ export const assignWorkerToOperation = async (
  * Insert a new production_operation row for a production
  */
 export const insertProductionOperation = async (payload: any) => {
-  // expect snake_case keys matching DB: production_id, operation_id, worker_id, worker_name, pieces_done, earnings, date, created_at
+  // expect snake_case keys matching DB: production_id, operation_id, worker_id, worker_name, pieces_done, earnings, date, created_at, entered_by
   const { data, error } = await supabase
     .from("production_operation")
     .insert([payload])
@@ -310,6 +314,7 @@ export const getOperationsByWorkerId = async (workerId: string) => {
       ratePerPiece: rate,
       totalEarning: r.earnings || 0,
       poNumber: prod?.po_number || "-",
+      enteredBy: r.entered_by,
     };
   });
 };

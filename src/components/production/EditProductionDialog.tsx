@@ -23,6 +23,7 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 import { Production } from "@/types/production";
 
@@ -51,6 +52,7 @@ export const EditProductionDialog: React.FC<EditProductionDialogProps> = ({
   onUpdateProduction,
   production,
 }) => {
+  const { toast } = useToast();
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -79,21 +81,30 @@ export const EditProductionDialog: React.FC<EditProductionDialogProps> = ({
     }
   }, [production]);
 
-  const onSubmit = (values: any) => {
+  const onSubmit = async (values: any) => {
     if (!production) return;
-    // Build updates using snake_case keys expected by the DB/service
-    const updated = {
-      id: production.id,
-      production_code: values.productionId,
-      po_number: values.poNumber,
-      color: values.color,
-      total_fabric: values.totalFabric,
-      average: values.average,
-      total_quantity: values.totalQuantity,
-    };
+    try {
+      // Build updates using snake_case keys expected by the DB/service
+      const updated = {
+        id: production.id,
+        production_code: values.productionId,
+        po_number: values.poNumber,
+        color: values.color,
+        total_fabric: values.totalFabric,
+        average: values.average,
+        total_quantity: values.totalQuantity,
+      };
 
-    onUpdateProduction(updated);
-    onOpenChange(false);
+      await onUpdateProduction(updated);
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error("Update production error", err);
+      toast({
+        title: "Error",
+        description: err?.message || "Failed to update production",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!production) return null;

@@ -19,6 +19,7 @@ export interface Employee {
   salary: number;
   isActive: boolean;
   createdBy: string;
+  enteredBy?: string;
   created_at: Date;
 }
 

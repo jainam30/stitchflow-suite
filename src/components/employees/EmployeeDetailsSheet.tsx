@@ -189,6 +189,18 @@ export const EmployeeDetailsSheet: React.FC<EmployeeDetailsSheetProps> = ({
                       </FormItem>
                     )}
                   />
+                  <div className="col-span-1 space-y-2">
+                    <Label className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Created On</Label>
+                    <div className="text-sm border rounded-md p-2 bg-muted/30">
+                      {employee.created_at ? new Date(employee.created_at).toLocaleDateString('en-GB') : '—'}
+                    </div>
+                  </div>
+                  <div className="col-span-1 space-y-2">
+                    <Label className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Entered By</Label>
+                    <div className="text-sm border rounded-md p-2 bg-muted/30">
+                      {employee.enteredBy || '—'}
+                    </div>
+                  </div>
                   <FormField
                     control={form.control}
                     name="employeeId"

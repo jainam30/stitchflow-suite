@@ -6,6 +6,7 @@ export interface Operation {
   amount_per_piece: number;
   product_id: string;
   created_at?: string | Date;
+  entered_by?: string;
 }
 
 export interface Product {

@@ -58,7 +58,7 @@ export const WorkerTable: React.FC<WorkerTableProps> = ({ workers, onUpdateWorke
             <TableHead>Worker Name</TableHead>
             <TableHead>ID</TableHead>
             <TableHead>Mobile</TableHead>
-            <TableHead>Address</TableHead>
+            <TableHead>Current Address</TableHead>
             <TableHead>Created At</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -83,7 +83,7 @@ export const WorkerTable: React.FC<WorkerTableProps> = ({ workers, onUpdateWorke
                   <TableCell className="font-medium">{worker.name}</TableCell>
                   <TableCell>{worker.workerId}</TableCell>
                   <TableCell>{worker.mobileNumber}</TableCell>
-                  <TableCell className="truncate max-w-[200px]">{worker.address}</TableCell>
+                  <TableCell className="truncate max-w-[200px]">{worker.currentAddress}</TableCell>
                   <TableCell>{createdLabel}</TableCell>
                   <TableCell className="text-right">
 

@@ -80,7 +80,7 @@ export type AddSupervisorPayload = {
 interface AddSupervisorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddSupervisor: (payload: AddSupervisorPayload) => void;
+  onAddSupervisor: (payload: AddSupervisorPayload) => Promise<{ data: any; error: any }>;
 }
 
 export const AddSupervisorDialog: React.FC<AddSupervisorDialogProps> = ({
@@ -149,6 +149,7 @@ export const AddSupervisorDialog: React.FC<AddSupervisorDialogProps> = ({
   };
 
   const onSubmit = async (values: SupervisorFormValues) => {
+    console.log("AddSupervisorDialog onSubmit START", values);
     setIsSubmitting(true);
 
     try {
@@ -192,27 +193,30 @@ export const AddSupervisorDialog: React.FC<AddSupervisorDialogProps> = ({
       };
 
       // Call the callback with full payload
-      await onAddSupervisor(payload);
+      const res = await onAddSupervisor(payload);
 
-      // Show success message
-      toast({
-        title: "Supervisor added",
-        description: `${values.name} has been added as a supervisor.`,
-      });
-
-      // Reset form and close dialog
-      form.reset();
-      onOpenChange(false);
+      if (!res.error) {
+        // Reset form and close dialog only on success
+        form.reset();
+        onOpenChange(false);
+      }
     } catch (error) {
+      console.error("AddSupervisorDialog onSubmit error:", error);
       toast({
         title: "Error",
-        description: "Failed to add supervisor. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Log validation errors if any
+  const errors = form.formState.errors;
+  if (Object.keys(errors).length > 0) {
+    console.warn("AddSupervisorDialog Validation Errors:", errors);
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

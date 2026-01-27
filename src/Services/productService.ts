@@ -45,6 +45,7 @@ export const createProduct = async (productData: any, operations: any[] = []) =>
       operation_code: op.operation_code,
       amount_per_piece: op.amount_per_piece,
       product_id: productId,
+      entered_by: op.entered_by,
     }));
 
     const { error: opError } = await supabase
@@ -104,28 +105,57 @@ export const updateProduct = async (id: string, updates: any, operations: any[] 
 
   if (updateError) throw updateError;
 
-  // Delete existing operations for product
-  const { error: deleteError } = await supabase
+  // 1. Get current operations from DB
+  const { data: currentOps, error: currentOpsError } = await supabase
     .from("operations")
-    .delete()
+    .select("id")
     .eq("product_id", id);
 
-  if (deleteError) throw deleteError;
+  if (currentOpsError) throw currentOpsError;
 
-  // Insert new operations (if provided)
-  if (operations && operations.length > 0) {
-    const formattedOps = operations.map((op) => ({
-      name: op.name,
-      operation_code: op.operation_code,
-      amount_per_piece: op.amount_per_piece,
-      product_id: id,
-    }));
+  const currentOpIds = currentOps?.map(o => o.id) || [];
+  const incomingOpIds = operations.map(o => o.id).filter(id => id && !id.startsWith('new-'));
 
-    const { error: insertError } = await supabase
+  // 2. Identify operations to delete (in DB but not in incoming)
+  const idsToDelete = currentOpIds.filter(id => !incomingOpIds.includes(id));
+
+  if (idsToDelete.length > 0) {
+    // We try to delete, but wrap in a try/catch or ignore errors if they are referenced
+    // For now, let's try to delete them. If they are referenced, the DB will return an error.
+    // We can decide to ignore that error if we want to allow keeping stale reference-able ops.
+    const { error: deleteError } = await supabase
       .from("operations")
-      .insert(formattedOps);
+      .delete()
+      .in("id", idsToDelete);
 
-    if (insertError) throw insertError;
+    if (deleteError) {
+      console.warn("Could not delete some operations (they might be referenced):", deleteError);
+      // Optional: don't throw if it's a reference error
+    }
+  }
+
+  // 3. Upsert incoming operations
+  if (operations && operations.length > 0) {
+    const formattedOps = operations.map((op) => {
+      const row: any = {
+        name: op.name,
+        operation_code: op.operation_code,
+        amount_per_piece: op.amount_per_piece,
+        product_id: id,
+        entered_by: op.entered_by,
+      };
+      // Keep ID if it's an existing one
+      if (op.id && !op.id.startsWith("new-")) {
+        row.id = op.id;
+      }
+      return row;
+    });
+
+    const { error: upsertError } = await supabase
+      .from("operations")
+      .upsert(formattedOps);
+
+    if (upsertError) throw upsertError;
   }
 
   return true;
@@ -149,7 +179,7 @@ export const toggleProductStatus = async (id: string) => {
       prod_id: id,
     });
     if (!error) return data;
-  } catch (_) {}
+  } catch (_) { }
 
   const product = await getProductById(id);
   const newState = !product.is_active;

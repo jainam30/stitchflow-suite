@@ -21,6 +21,7 @@ export interface ProductionOperation {
   piecesDone: number;
   earnings: number;
   date: Date;
+  enteredBy?: string;
   createdAt: Date;
 }
 

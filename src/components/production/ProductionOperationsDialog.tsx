@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { addWorkerSalary, updateWorkerSalaryByOps, deleteWorkerSalary } from "@/Services/salaryService";
 import { deleteProductionOperation, checkAndUpdateProductionStatus } from "@/Services/productionService";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +43,7 @@ interface Props {
 const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, production, availableWorkers, onAssignWorker }) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [ops, setOps] = useState<any[]>([]);
   const [opMasters, setOpMasters] = useState<any[]>([]);
   const [fetchedWorkers, setFetchedWorkers] = useState<any[]>([]);
@@ -155,6 +157,7 @@ const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, produ
           supervisor_employee_id: null,
           production_id: production.id,
           created_at: new Date().toISOString(),
+          entered_by: user?.name ?? user?.email ?? user?.id ?? "system",
         };
 
         const createdOp = await insertProductionOperation(payload);
@@ -183,6 +186,8 @@ const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, produ
 
         const refreshed = await getOperationsByProductionId(production.id);
         setOps(refreshed || []);
+
+        queryClient.invalidateQueries({ queryKey: ["productions"] });
 
         // Check completion status
         const statusChanged = await checkAndUpdateProductionStatus(production.id);
@@ -218,8 +223,13 @@ const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, produ
       const workerList = (availableWorkers && availableWorkers.length > 0) ? availableWorkers : fetchedWorkers;
       const worker = workerList.find((w: any) => w.id === selectedWorkerId);
       const workerName = worker ? worker.name : null;
+      const enteredBy = user?.name ?? user?.email ?? user?.id ?? "system";
 
-      const res = await assignWorkerToOperation(production.id, targetOpId, selectedWorkerId || null, pieces || 0, workerName || null);
+      const opBefore = ops.find(o => o.id === targetOpId);
+      const amountPerPiece = opBefore?.operations?.amount_per_piece ?? opBefore?.rate_per_piece ?? opBefore?.rate ?? 0;
+      const earningsValue = (Number(pieces) || 0) * Number(amountPerPiece || 0);
+
+      const res = await assignWorkerToOperation(production.id, targetOpId, selectedWorkerId || null, pieces || 0, workerName || null, enteredBy, earningsValue);
       toast({ title: "Saved", description: "Operation updated" });
 
       // add worker salary record for this updated assignment (if worker selected + pieces > 0)
@@ -290,6 +300,8 @@ const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, produ
       const refreshed = await getOperationsByProductionId(production.id);
       setOps(refreshed || []);
 
+      queryClient.invalidateQueries({ queryKey: ["productions"] });
+
       onAssignWorker && onAssignWorker(production.id, targetOpId, selectedWorkerId || "", pieces || 0);
 
       // Check if production should be marked as completed
@@ -349,6 +361,7 @@ const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, produ
       toast({ title: "Deleted", description: "Operation and salary record removed" });
       const refreshed = await getOperationsByProductionId(production.id);
       setOps(refreshed || []);
+      queryClient.invalidateQueries({ queryKey: ["productions"] });
     } catch (err: any) {
       toast({ title: "Error", description: "Failed to delete", variant: "destructive" });
     } finally {
@@ -464,6 +477,9 @@ const ProductionOperationsDialog: React.FC<Props> = ({ open, onOpenChange, produ
                     <div className="text-sm font-medium">{o.operations?.name ?? o.operation_id}</div>
                     <div className="text-xs text-muted-foreground">
                       Worker: {o.worker_name ?? "none"} · Pieces: {o.pieces_done} · Date: {o.date}
+                    </div>
+                    <div className="text-xs text-muted-foreground italic">
+                      Entered by: {o.entered_by || "—"}
                     </div>
                   </div>
                   <DropdownMenu modal={false}>

@@ -45,6 +45,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
             idProof: '',
             idProofImage: null,
             bankAccountDetail: '',
+            bankname: '',
             account_number: '',
             ifsc_code: '',
             account_holder_name: '',
@@ -69,6 +70,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
             idProof: (employee.idProof as string) || '',
             idProofImage: null,
             bankAccountDetail: (employee.bankAccountDetail as string) || '',
+            bankname: employee.bankname || '',
             account_number: employee.account_number || '',
             ifsc_code: employee.ifsc_code || '',
             account_holder_name: employee.account_holder_name || '',
@@ -103,6 +105,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
                 emergencyNumber: data.emergencyNumber,
                 idProof: data.idProof,
                 bankAccountDetail: data.bankAccountDetail,
+                bankname: data.bankname,
                 account_number: data.account_number,
                 ifsc_code: data.ifsc_code,
                 account_holder_name: data.account_holder_name,
@@ -342,10 +345,62 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
                                     <h3 className="text-sm font-medium mb-3">Bank Details</h3>
                                     <FormField
                                         control={form.control}
-                                        name="bankAccountDetail"
+                                        name="bankname"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Bank Account Details</FormLabel>
+                                                <FormLabel>Bank Name</FormLabel>
+                                                <FormControl>
+                                                    <Input {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="account_holder_name"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Account Holder Name</FormLabel>
+                                                <FormControl>
+                                                    <Input {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="account_number"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Account Number</FormLabel>
+                                                <FormControl>
+                                                    <Input {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="ifsc_code"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>IFSC Code</FormLabel>
+                                                <FormControl>
+                                                    <Input {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="bankAccountDetail"
+                                        render={({ field }) => (
+                                            <FormItem className="col-span-1 md:col-span-2">
+                                                <FormLabel>Additional Bank Details</FormLabel>
                                                 <FormControl>
                                                     <Input {...field} />
                                                 </FormControl>

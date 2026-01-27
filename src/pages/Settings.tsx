@@ -53,7 +53,7 @@ const Settings: React.FC = () => {
   const [supervisors, setSupervisors] = useState<any[]>([]);
   const [loadingSupervisors, setLoadingSupervisors] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  
+
   // Form for changing password
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
@@ -87,56 +87,57 @@ const Settings: React.FC = () => {
 
   // Handle password change submission
   const onPasswordSubmit = async (values: PasswordFormValues) => {
-  try {
-    const { data, error } = await supabase.rpc("change_user_password", {
-      p_user_id: user?.id,
-      p_current_password: values.currentPassword,
-      p_new_password: values.newPassword,
-    });
+    try {
+      const { data, error } = await supabase.rpc("change_user_password", {
+        p_user_id: user?.id,
+        p_current_password: values.currentPassword,
+        p_new_password: values.newPassword,
+      });
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Something went wrong while updating the password.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data === "INVALID_PASSWORD") {
+        toast({
+          title: "Incorrect Password",
+          description: "Your current password is incorrect.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data === "SUCCESS") {
+        toast({
+          title: "Password Updated",
+          description: "Your password has been changed successfully.",
+        });
+        passwordForm.reset();
+        return;
+      }
+
       toast({
         title: "Error",
-        description: "Something went wrong while updating the password.",
+        description: "Unknown error occurred.",
         variant: "destructive",
       });
-      return;
-    }
-
-    if (data === "INVALID_PASSWORD") {
+    } catch (err) {
       toast({
-        title: "Incorrect Password",
-        description: "Your current password is incorrect.",
+        title: "Error",
+        description: "Unexpected error occurred.",
         variant: "destructive",
       });
-      return;
     }
-
-    if (data === "SUCCESS") {
-      toast({
-        title: "Password Updated",
-        description: "Your password has been changed successfully.",
-      });
-      passwordForm.reset();
-      return;
-    }
-
-    toast({
-      title: "Error",
-      description: "Unknown error occurred.",
-      variant: "destructive",
-    });
-  } catch (err) {
-    toast({
-      title: "Error",
-      description: "Unexpected error occurred.",
-      variant: "destructive",
-    });
-  }
-};
+  };
 
 
   const handleAddSupervisor = async (payload: AddSupervisorPayload) => {
+    console.log("Settings handleAddSupervisor bridge triggered with:", { ...payload, password: "REDACTED" });
     const res = await addSupervisor(payload);
     if (res.error) {
       toast({
@@ -144,16 +145,17 @@ const Settings: React.FC = () => {
         description: res.error?.message ?? "An error occurred",
         variant: "destructive",
       });
-      return;
+      return res; // Return the full response
     }
 
     if (res.data) {
-      setSupervisors([res.data, ...supervisors]);
+      setSupervisors([res.data.supervisor, ...supervisors]);
       toast({
         title: "Supervisor added",
         description: `${res.data.supervisor.name} has been added as a supervisor.`,
       });
     }
+    return res;
   };
 
   const handleToggleSupervisorStatus = async (id: string) => {
@@ -171,7 +173,7 @@ const Settings: React.FC = () => {
     }
 
     if (res.data) {
-      setSupervisors(supervisors.map(s => 
+      setSupervisors(supervisors.map(s =>
         s.id === id ? { ...s, isActive: res.data.isActive } : s
       ));
       toast({
@@ -203,13 +205,13 @@ const Settings: React.FC = () => {
             Account
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="supervisors" className="space-y-4">
           <div className="flex justify-between">
             <h2 className="text-lg font-semibold">Supervisor Management</h2>
             <Button onClick={() => setIsAddDialogOpen(true)}>Add Supervisor</Button>
           </div>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Supervisors</CardTitle>
@@ -218,14 +220,14 @@ const Settings: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <SupervisorTable 
+              <SupervisorTable
                 supervisors={supervisors}
                 onToggleStatus={handleToggleSupervisorStatus}
               />
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="password">
           <Card>
             <CardHeader>
@@ -250,7 +252,7 @@ const Settings: React.FC = () => {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={passwordForm.control}
                     name="newPassword"
@@ -264,7 +266,7 @@ const Settings: React.FC = () => {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={passwordForm.control}
                     name="confirmPassword"
@@ -278,14 +280,14 @@ const Settings: React.FC = () => {
                       </FormItem>
                     )}
                   />
-                  
+
                   <Button type="submit">Update Password</Button>
                 </form>
               </Form>
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="account">
           <Card>
             <CardHeader>
@@ -318,7 +320,7 @@ const Settings: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-      
+
       <AddSupervisorDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}

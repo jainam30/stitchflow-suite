@@ -68,17 +68,21 @@ export const addSupervisor = async (
         password?: string | null;
     }
 ): Promise<{ data: { supervisor: Supervisor; user: any } | null; error: any }> => {
+    console.log("addSupervisor START with payload:", { ...payload, password: "REDACTED" });
     try {
         // 0️⃣ Validate: Email must be unique
         if (payload.email) {
             const alreadyExists = await checkEmailExists(payload.email);
             if (alreadyExists) {
+                console.log("Email already exists validation hit for:", payload.email);
                 return {
                     data: null,
                     error: { message: "Email already exists. Please use another email." }
                 };
             }
         }
+
+        console.log("Proceeding to insert employee...");
 
         // map payload -> employees table columns per provided schema
         const insertRow: any = {
@@ -94,7 +98,7 @@ export const addSupervisor = async (
             bank_account_detail: payload.bank_account_detail ?? null,
             bank_image_url: payload.bank_image_url ?? null,
             salary_amount:
-            typeof payload.salary_amount === "number" ? payload.salary_amount : null,
+                typeof payload.salary_amount === "number" ? payload.salary_amount : null,
             salary_id: payload.salary_id ?? null,
             role: payload.role ?? "supervisor",
             is_supervisor: payload.is_supervisor ?? true,
@@ -124,21 +128,29 @@ export const addSupervisor = async (
         }
 
         // 2️⃣ Create login user in app_users via RPC
+        console.log("Calling create_supervisor_user RPC with:", {
+            p_name: payload.name,
+            p_email: payload.email,
+            p_employee_id: employee.id,
+            p_password: "REDACTED",
+        });
+
         const { data: user, error: userError } = await supabase.rpc(
             "create_supervisor_user",
             {
-                p_name: payload.name,
+                p_name: payload.name, // Re-added p_name
                 p_email: payload.email,
-                p_password: payload.password, // plaintext - server hashes it
+                p_password: payload.password, // Pass plaintext - SQL function hashes it
                 p_employee_id: employee.id,
             }
         );
 
         if (userError) {
-            console.error("App User Insert Error:", userError);
+            console.error("App User RPC Error details:", userError);
 
             // rollback orphan employee
-            await supabase.from("employees").delete().eq("id", employee.id);
+            const { error: rollbackError } = await supabase.from("employees").delete().eq("id", employee.id);
+            if (rollbackError) console.error("Rollback failed:", rollbackError);
 
             return { data: null, error: userError };
         }

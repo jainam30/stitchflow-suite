@@ -9,8 +9,10 @@ import { AddProductDialog } from "@/components/products/AddProductDialog";
 import { Product } from '@/types/product';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getProducts, updateProduct } from "@/Services/productService";
+import { useToast } from "@/hooks/use-toast";
 
 const Products: React.FC = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -26,8 +28,18 @@ const Products: React.FC = () => {
 
   // NOTE: expecting operations array as third argument
   const handleUpdateProduct = async (id: string, updatedProduct: Partial<Product>, operations: any[] = []) => {
-    await updateProduct(id, updatedProduct, operations);
-    await queryClient.invalidateQueries({ queryKey: ["products"] });
+    try {
+      await updateProduct(id, updatedProduct, operations);
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (err: any) {
+      console.error("handleUpdateProduct error:", err);
+      toast({
+        title: "Error",
+        description: err?.message || "Failed to save product changes",
+        variant: "destructive",
+      });
+      throw err; // Re-throw so the sheet knows it failed
+    }
   };
 
   const filteredProducts = (products as Product[]).filter((product: Product) =>

@@ -145,11 +145,8 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
         account_holder_name: data.accountHolderName,
         bank_image_url: bankUrl,
         profile_image_url: profileUrl,
-        joining_date: null,
-        skill_type: null,
-        supervisor_employee_id: null,
-        salary_id: null,
         created_at: new Date().toISOString(),
+        entered_by: user?.name ?? user?.email ?? user?.id ?? "system",
       };
 
       await insertWorker(row);

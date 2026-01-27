@@ -18,7 +18,8 @@ export interface Worker {
   accountHolderName?: string;
   bankImageUrl: string;
   profileImageUrl?: string;
-  createdBy: string;
+  createdBy?: string;
+  enteredBy?: string;
   createdAt: Date;
 }
 

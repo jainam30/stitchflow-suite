@@ -85,10 +85,13 @@ export const WorkerDetailsSheet: React.FC<WorkerDetailsSheetProps> = ({
                 <div>{workerId}</div>
 
                 <div className="font-medium">Created By</div>
-                <div className="capitalize">{worker.createdBy}</div>
+                <div className="capitalize">{worker.createdBy || '—'}</div>
 
                 <div className="font-medium">Created On</div>
                 <div>{format(worker.createdAt, 'dd MMM yyyy')}</div>
+
+                <div className="font-medium">Entered By</div>
+                <div>{worker.enteredBy || '—'}</div>
               </div>
             </div>
 

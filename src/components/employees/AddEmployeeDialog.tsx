@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { FileImage, Upload, Banknote, User, Shield } from 'lucide-react';
 import { supabase } from "@/Config/supabaseClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -70,6 +71,7 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
   onAddEmployee
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [idProofPreview, setIdProofPreview] = useState<string | null>(null);
   const [bankImagePreview, setBankImagePreview] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<string>("basic");
@@ -175,7 +177,8 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
             bank_image_url: bankUrl,
             salary_amount: values.salary,
             is_active: values.isActive,
-            created_at: new Date(),
+            created_at: new Date().toISOString(),
+            entered_by: user?.name ?? "system",
           },
         ])
         .select("*")
@@ -434,7 +437,7 @@ export const AddEmployeeDialog: React.FC<AddEmployeeDialogProps> = ({
                 </div>
               </TabsContent>
 
-              <TabsContent value="currentAddress" className="space-y-4">
+              <TabsContent value="address" className="space-y-4">
                 <FormField
                   control={form.control}
                   name="currentAddress"

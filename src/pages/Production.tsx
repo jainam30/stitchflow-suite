@@ -74,7 +74,9 @@ const ProductionPage: React.FC = () => {
 
   // new: update production handler
   const handleUpdateProduction = async (id: string, updates: any) => {
-    await updateProduction(id, updates);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id: _, ...payload } = updates;
+    await updateProduction(id, payload);
     toast({ title: "Production updated" });
     queryClient.invalidateQueries({ queryKey: ["productions"] });
     setIsEditDialogOpen(false);
@@ -167,10 +169,6 @@ const ProductionPage: React.FC = () => {
         onOpenChange={setIsOperationsDialogOpen}
         production={selectedProduction}
         availableWorkers={[]} // wire to real workers where available
-        onAssignWorker={async (productionId, operationRecordId, workerId, pieces) => {
-          // note: operationRecordId is id of production_operation row
-          await assignWorkerAndRefresh(productionId, operationRecordId, workerId, pieces);
-        }}
       />
     </div>
   );

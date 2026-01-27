@@ -33,6 +33,7 @@ const Workers: React.FC = () => {
   const mappedWorkers: Worker[] = (workersRaw as any[]).map((w) => ({
     id: w.id,
     name: w.name,
+    worker_code: w.worker_code,
     workerId: w.worker_code,
     address: w.address,
     permanentAddress: w.permanent_address,
@@ -49,7 +50,9 @@ const Workers: React.FC = () => {
     bankImageUrl: w.bank_image_url ?? "",
     profileImageUrl: w.profile_image_url ?? "",
     // removed addressProofImageUrl (not in DB)
-    createdBy: (w.created_by as string) ?? "",
+
+    createdBy: (w.created_by as string) || undefined,
+    enteredBy: (w.entered_by as string) || undefined,
     createdAt: w.created_at ? new Date(w.created_at) : new Date(), // fallback to now
   }));
 
