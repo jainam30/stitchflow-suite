@@ -4,7 +4,6 @@ export interface Employee {
   name: string;
   employeeId: string;
   email: string;
-  address: string;
   permanentAddress?: string;
   currentAddress?: string;
   mobileNumber: string;
@@ -12,6 +11,10 @@ export interface Employee {
   idProof: string;
   idProofImageUrl?: string;
   bankAccountDetail: string;
+  bankname: string;
+  account_number: string;
+  ifsc_code: string;
+  account_holder_name: string;
   bankImageUrl: string;
   salary: number;
   isActive: boolean;
@@ -23,7 +26,6 @@ export interface EmployeeFormData {
   name: string;
   employeeId: string;
   email: string;
-  address: string;
   permanentAddress?: string;
   currentAddress?: string;
   mobileNumber: string;
@@ -31,6 +33,10 @@ export interface EmployeeFormData {
   idProof: string;
   idProofImage?: File | null;
   bankAccountDetail: string;
+  bankname: string;
+  account_number: string;
+  ifsc_code: string;
+  account_holder_name: string;
   bankImage: File | null;
   salary: number;
   isActive: boolean;

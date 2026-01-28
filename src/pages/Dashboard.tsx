@@ -44,6 +44,7 @@ const Dashboard: React.FC = () => {
   const [productionStats, setProductionStats] = useState<ProductionProgressItem[]>([]);
   const [recentWorkerOperations, setRecentWorkerOperations] = useState<RecentOperationItem[]>([]);
 
+
   // ----------------------------
   // FETCH DASHBOARD DATA
   // ----------------------------
@@ -65,6 +66,7 @@ const Dashboard: React.FC = () => {
 
         setProductionStats(data.productionProgress);
         setRecentWorkerOperations(data.recentWorkerOps);
+
       } catch (err) {
         console.error("Dashboard Fetch Error:", err);
       } finally {
@@ -176,7 +178,7 @@ const Dashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* PRODUCTION PROGRESS + RECENT OPS */}
+      {/* PRODUCTION PROGRESS WITH PO NUMBER+ RECENT OPS */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* PRODUCTION PROGRESS */}
         <Card className="col-span-1 dashboard-card shadow-md hover:shadow-lg transition-all overflow-hidden">
@@ -194,7 +196,10 @@ const Dashboard: React.FC = () => {
               {productionStats.map((product) => (
                 <div key={product.id} className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm font-medium">{product.productName}</span>
+                    <div>
+                      <span className="text-sm font-medium">{product.productName}</span>
+                      <span className="text-xs text-muted-foreground ml-2">PO: {product.po_number}</span>
+                    </div>
                     <span className="text-sm text-gray-500">{product.progress}%</span>
                   </div>
 
