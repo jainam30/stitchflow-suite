@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom';
 import {
   Sidebar as SidebarComponent,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
@@ -42,7 +43,7 @@ const Sidebar: React.FC = () => {
       <SidebarContent>
         <div className="px-3 py-4">
           <div className="flex items-center gap-3 px-2">
-            <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground p-2.5 rounded-lg shadow-lg animate-move-horizontal">
+            <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground p-2.5 rounded-lg shadow-lg">
               <Scissors size={22} />
             </div>
             <div className="space-y-1">
@@ -205,6 +206,9 @@ const Sidebar: React.FC = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
+      </SidebarContent>
+
+      <SidebarFooter>
         <SidebarGroup>
           <SidebarGroupLabel className="uppercase font-bold tracking-widest text-sm text-black pl-3 py-1.5">
             {isAdmin ? "ADMINISTRATION" : "ACCOUNT"}
@@ -242,7 +246,7 @@ const Sidebar: React.FC = () => {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-      </SidebarContent>
+      </SidebarFooter>
     </SidebarComponent>
   );
 };
