@@ -41,7 +41,7 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <SidebarComponent collapsible="icon">
+    <SidebarComponent collapsible="offcanvas">
       <SidebarContent>
         <div className="px-3 py-4">
           <div className="flex items-center gap-3 px-2">
