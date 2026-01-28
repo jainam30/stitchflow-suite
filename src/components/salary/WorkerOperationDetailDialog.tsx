@@ -138,7 +138,7 @@ export const WorkerOperationDetailDialog: React.FC<Props> = ({ open, onClose, wo
                     </button>
                 </header>
 
-                <div className="overflow-y-auto flex-1">
+                <div className="overflow-y-auto overflow-x-auto flex-1">
                     <table className="w-full min-w-[560px] table-auto">
                         <thead className="sticky top-0 bg-white dark:bg-slate-800 z-10 shadow-sm">
                             <tr className="text-left text-sm text-slate-600 dark:text-slate-300">

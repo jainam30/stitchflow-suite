@@ -67,6 +67,7 @@
 body {
   background: #fff !important;
   color: hsl(var(--foreground));
+  overflow-x: hidden;
 }
 
 /* Remove animated card/section background */
