@@ -4,21 +4,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { User, Settings, LogOut, Scissors } from 'lucide-react';
+import { useSidebar } from '@/components/ui/sidebar';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
+  const { open, state, isMobile } = useSidebar();
+
+  console.log("Header Render: Sidebar State:", state, "Open:", open, "Mobile:", isMobile);
 
   return (
     <header className="bg-white border-b h-16 flex items-center justify-between px-2 sm:px-4 md:px-6 w-full">
       <div className="flex items-center gap-2 sm:gap-4">
-        <SidebarTrigger />
+        <SidebarTrigger onClick={() => console.log("Trigger Clicked!")} />
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-2">
             <span className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground p-1.5 rounded-lg shadow-lg animate-move-horizontal">
@@ -36,7 +40,7 @@ const Header: React.FC = () => {
           <span className="text-[0.62rem] sm:text-xs text-muted-foreground">ERP Management</span>
         </div>
       </div>
-      
+
       <div className="flex items-center gap-1 sm:gap-2">
         {user && (
           <DropdownMenu>
@@ -90,7 +94,7 @@ const Header: React.FC = () => {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={logout}
                   className="flex items-center gap-2 text-destructive focus:text-destructive"
                 >
