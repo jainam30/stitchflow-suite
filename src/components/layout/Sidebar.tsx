@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 import {
   Sidebar as SidebarComponent,
   SidebarContent,
-  SidebarFooter,
+
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
@@ -222,9 +222,9 @@ const Sidebar: React.FC = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-      </SidebarContent>
 
-      <SidebarFooter>
+
+
         <SidebarGroup>
           <SidebarGroupLabel className="uppercase font-bold tracking-widest text-sm text-black pl-3 py-1.5">
             {isAdmin ? "ADMINISTRATION" : "ACCOUNT"}
@@ -262,7 +262,8 @@ const Sidebar: React.FC = () => {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-      </SidebarFooter>
+
+      </SidebarContent>
     </SidebarComponent>
   );
 };
