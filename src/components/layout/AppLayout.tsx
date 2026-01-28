@@ -55,8 +55,8 @@ const AppLayout: React.FC = () => {
       <SidebarInset>
         <Header />
         <LayoutErrorBoundary>
-          {/* Responsive padding, scrollable but prevents overflow on x axis */}
-          <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto max-w-full">
+          {/* Responsive padding, scrollable vertically, hidden horizontally */}
+          <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto overflow-x-hidden w-full">
             <div className="max-w-5xl mx-auto w-full">
               <Outlet />
             </div>

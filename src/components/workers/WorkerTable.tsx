@@ -52,73 +52,75 @@ export const WorkerTable: React.FC<WorkerTableProps> = ({ workers, onUpdateWorke
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Worker Name</TableHead>
-            <TableHead>ID</TableHead>
-            <TableHead>Mobile</TableHead>
-            <TableHead>Address</TableHead>
-            <TableHead>Created At</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {workers.length === 0 ? (
+      <div className="rounded-md border w-full overflow-x-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                No workers found
-              </TableCell>
+              <TableHead>Worker Name</TableHead>
+              <TableHead>ID</TableHead>
+              <TableHead>Mobile</TableHead>
+              <TableHead>Address</TableHead>
+              <TableHead>Created At</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ) : (
-            workers.map((worker) => {
-              const createdAt = worker.createdAt ? new Date(worker.createdAt) : null;
-              const createdLabel = createdAt && !isNaN(createdAt.getTime())
-                ? format(createdAt, "dd/MM/yyyy")
-                : "—";
+          </TableHeader>
 
-              return (
-                <TableRow key={worker.id}>
-                  <TableCell className="font-medium">{worker.name}</TableCell>
-                  <TableCell>{worker.workerId}</TableCell>
-                  <TableCell>{worker.mobileNumber}</TableCell>
-                  <TableCell className="truncate max-w-[200px]">{worker.address}</TableCell>
-                  <TableCell>{createdLabel}</TableCell>
-                  <TableCell className="text-right">
+          <TableBody>
+            {workers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                  No workers found
+                </TableCell>
+              </TableRow>
+            ) : (
+              workers.map((worker) => {
+                const createdAt = worker.createdAt ? new Date(worker.createdAt) : null;
+                const createdLabel = createdAt && !isNaN(createdAt.getTime())
+                  ? format(createdAt, "dd/MM/yyyy")
+                  : "—";
+
+                return (
+                  <TableRow key={worker.id}>
+                    <TableCell className="font-medium">{worker.name}</TableCell>
+                    <TableCell>{worker.workerId}</TableCell>
+                    <TableCell>{worker.mobileNumber}</TableCell>
+                    <TableCell className="truncate max-w-[200px]">{worker.address}</TableCell>
+                    <TableCell>{createdLabel}</TableCell>
+                    <TableCell className="text-right">
 
 
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
 
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenDetails(worker)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleOpenOperations(worker)}>
-                          <Clipboard className="mr-2 h-4 w-4" />
-                          View Operations
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleOpenEdit(worker)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit Worker
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleOpenDetails(worker)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenOperations(worker)}>
+                            <Clipboard className="mr-2 h-4 w-4" />
+                            View Operations
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenEdit(worker)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Worker
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {selectedWorker && (
         <>

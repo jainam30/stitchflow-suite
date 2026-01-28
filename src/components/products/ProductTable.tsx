@@ -22,7 +22,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onUpdatePr
 
   return (
     <>
-      <div className="rounded-md border">
+      <div className="rounded-md border w-full overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

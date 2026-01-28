@@ -282,7 +282,7 @@ export const WorkerSalaryTable: React.FC<WorkerSalaryTableProps> = ({
         </Select>
       </div>
 
-      <div className="rounded-md border overflow-x-auto">
+      <div className="rounded-md border w-full overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

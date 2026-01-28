@@ -80,68 +80,70 @@ export const AttendanceTable = ({
 
   return (
     <div className="space-y-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Employee</TableHead>
-            {[...Array(daysInMonth).keys()].map((d) => (
-              <TableHead key={d} className="text-center min-w-[100px]">{d + 1}</TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
+      <div className="rounded-md border w-full overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Employee</TableHead>
+              {[...Array(daysInMonth).keys()].map((d) => (
+                <TableHead key={d} className="text-center min-w-[100px]">{d + 1}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
 
-        <TableBody>
-          {employees.map((emp) => {
-            const isPaid = paidEmployeeIds.includes(emp.id);
-            return (
-              <TableRow key={emp.id} className={isPaid ? "opacity-50 bg-muted/20" : ""}>
-                <TableCell className="font-medium">
-                  {emp.name}
-                  {isPaid && <div className="text-xs text-red-500">(Paid)</div>}
-                </TableCell>
+          <TableBody>
+            {employees.map((emp) => {
+              const isPaid = paidEmployeeIds.includes(emp.id);
+              return (
+                <TableRow key={emp.id} className={isPaid ? "opacity-50 bg-muted/20" : ""}>
+                  <TableCell className="font-medium">
+                    {emp.name}
+                    {isPaid && <div className="text-xs text-red-500">(Paid)</div>}
+                  </TableCell>
 
-                {[...Array(daysInMonth).keys()].map((d) => {
-                  const key = `${emp.id}-${d + 1}`;
-                  const row = local[key] || { status: "present" };
+                  {[...Array(daysInMonth).keys()].map((d) => {
+                    const key = `${emp.id}-${d + 1}`;
+                    const row = local[key] || { status: "present" };
 
-                  const getStatusColor = (status) => {
-                    switch (status) {
-                      case "present":
-                        return "bg-green-400 text-white hover:bg-green-600 focus:ring-green-500";
-                      case "absent":
-                        return "bg-red-400 text-white hover:bg-red-600 focus:ring-red-500";
-                      case "leave":
-                        return "bg-yellow-400 text-white hover:bg-yellow-600 focus:ring-yellow-500";
-                      default:
-                        return "";
-                    }
-                  };
+                    const getStatusColor = (status) => {
+                      switch (status) {
+                        case "present":
+                          return "bg-green-400 text-white hover:bg-green-600 focus:ring-green-500";
+                        case "absent":
+                          return "bg-red-400 text-white hover:bg-red-600 focus:ring-red-500";
+                        case "leave":
+                          return "bg-yellow-400 text-white hover:bg-yellow-600 focus:ring-yellow-500";
+                        default:
+                          return "";
+                      }
+                    };
 
-                  return (
-                    <TableCell key={key} className="text-center">
-                      <Select
-                        value={row.status}
-                        onValueChange={(value) => handleChange(emp.id, d + 1, value)}
-                        disabled={isPaid}
-                      >
-                        <SelectTrigger className={`w-[100px] border-0 ${getStatusColor(row.status)}`}>
-                          <SelectValue />
-                        </SelectTrigger>
+                    return (
+                      <TableCell key={key} className="text-center">
+                        <Select
+                          value={row.status}
+                          onValueChange={(value) => handleChange(emp.id, d + 1, value)}
+                          disabled={isPaid}
+                        >
+                          <SelectTrigger className={`w-[100px] border-0 ${getStatusColor(row.status)}`}>
+                            <SelectValue />
+                          </SelectTrigger>
 
-                        <SelectContent>
-                          <SelectItem value="present" className="text-green-600">P</SelectItem>
-                          <SelectItem value="absent" className="text-red-600">A</SelectItem>
-                          <SelectItem value="leave" className="text-yellow-600">L</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                          <SelectContent>
+                            <SelectItem value="present" className="text-green-600">P</SelectItem>
+                            <SelectItem value="absent" className="text-red-600">A</SelectItem>
+                            <SelectItem value="leave" className="text-yellow-600">L</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
 
       <Button onClick={() => onSave(buildSavePayload())} disabled={loading}>
         Save Attendance

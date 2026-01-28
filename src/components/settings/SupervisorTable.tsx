@@ -37,7 +37,7 @@ interface SupervisorTableProps {
   onDelete?: (id: string) => void;
 }
 
-export const SupervisorTable: React.FC<SupervisorTableProps> = ({ 
+export const SupervisorTable: React.FC<SupervisorTableProps> = ({
   supervisors,
   onToggleStatus,
   onDelete
@@ -50,7 +50,7 @@ export const SupervisorTable: React.FC<SupervisorTableProps> = ({
 
   const handleDelete = () => {
     if (!selectedSupervisor) return;
-    
+
     (async () => {
       const res = await deleteSupervisor(selectedSupervisor.id);
       if (res.error) {
@@ -69,100 +69,102 @@ export const SupervisorTable: React.FC<SupervisorTableProps> = ({
 
       onDelete?.(selectedSupervisor.id);
     })();
-    
+
     setIsDeleteDialogOpen(false);
     setSelectedSupervisor(null);
   };
 
   const handleResetPassword = () => {
     if (!selectedSupervisor) return;
-    
+
     // In a real app, this would call an API to reset the password
     toast({
       title: "Password reset",
       description: `A password reset email has been sent to ${selectedSupervisor.email}.`,
     });
-    
+
     setIsResetPasswordDialogOpen(false);
     setSelectedSupervisor(null);
   };
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Added On</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {supervisors.length === 0 ? (
+      <div className="rounded-md border w-full overflow-x-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                No supervisors found
-              </TableCell>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Added On</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ) : (
-            supervisors.map((supervisor) => (
-              <TableRow key={supervisor.id}>
-                <TableCell className="font-medium">{supervisor.name}</TableCell>
-                <TableCell>{supervisor.email}</TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={supervisor.isActive}
-                      onCheckedChange={() => onToggleStatus(supervisor.id)}
-                    />
-                    <Badge variant={supervisor.isActive ? "default" : "outline"}>
-                      {supervisor.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                </TableCell>
-                <TableCell>{format(supervisor.createdAt, 'dd/MM/yyyy')}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => {
-                        setSelectedSupervisor(supervisor);
-                        setIsEditDialogOpen(true);
-                      }}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => {
-                        setSelectedSupervisor(supervisor);
-                        setIsResetPasswordDialogOpen(true);
-                      }}>
-                        <Lock className="mr-2 h-4 w-4" />
-                        Reset Password
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => {
-                          setSelectedSupervisor(supervisor);
-                          setIsDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+          </TableHeader>
+          <TableBody>
+            {supervisors.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                  No supervisors found
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              supervisors.map((supervisor) => (
+                <TableRow key={supervisor.id}>
+                  <TableCell className="font-medium">{supervisor.name}</TableCell>
+                  <TableCell>{supervisor.email}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={supervisor.isActive}
+                        onCheckedChange={() => onToggleStatus(supervisor.id)}
+                      />
+                      <Badge variant={supervisor.isActive ? "default" : "outline"}>
+                        {supervisor.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell>{format(supervisor.createdAt, 'dd/MM/yyyy')}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedSupervisor(supervisor);
+                          setIsEditDialogOpen(true);
+                        }}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedSupervisor(supervisor);
+                          setIsResetPasswordDialogOpen(true);
+                        }}>
+                          <Lock className="mr-2 h-4 w-4" />
+                          Reset Password
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => {
+                            setSelectedSupervisor(supervisor);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -203,7 +205,7 @@ export const SupervisorTable: React.FC<SupervisorTableProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Edit Supervisor Dialog */}
       {selectedSupervisor && (
         <SupervisorEditDialog
