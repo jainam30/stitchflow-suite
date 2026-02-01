@@ -227,7 +227,7 @@ const Dashboard: React.FC = () => {
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 overflow-hidden">
             <div className="space-y-4">
               {recentWorkerOperations.slice(0, 6).length === 0 && (
                 <p className="text-sm text-muted-foreground">No worker activity found.</p>
@@ -238,22 +238,22 @@ const Dashboard: React.FC = () => {
                   key={op.id}
                   className="flex items-center p-2 rounded-lg hover:bg-muted/50 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center mr-3">
+                  <div className="w-9 h-9 min-w-9 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center mr-3">
                     <Clipboard size={16} className="text-primary" />
                   </div>
 
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex justify-between">
-                      <p className="text-sm font-medium">{op.workerName}</p>
-                      <p className="text-xs font-semibold text-primary">₹{op.earnings}</p>
+                      <p className="text-sm font-medium truncate pr-2">{op.workerName}</p>
+                      <p className="text-xs font-semibold text-primary shrink-0">₹{op.earnings}</p>
                     </div>
 
                     <div className="flex justify-between">
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 truncate pr-2">
                         {op.operationName} - {op.productName} ({op.pieces} pcs)
                       </p>
 
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <p className="text-xs text-gray-500 flex items-center gap-1 shrink-0">
                         <Calendar size={12} />
                         {op.date}
                       </p>

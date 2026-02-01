@@ -186,7 +186,7 @@ export const AddWorkerDialog: React.FC<AddWorkerDialogProps> = ({
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 py-4">
           <Tabs value={currentStep} onValueChange={setCurrentStep}>
-            <TabsList className="grid grid-cols-3 mb-6 pointer-events-none">
+            <TabsList className="grid grid-cols-3 mb-6 pointer-events-none h-auto">
               <TabsTrigger value="basic" className="pointer-events-none">
                 <User className="mr-2 h-4 w-4" />
                 Basic Info
