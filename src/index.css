@@ -9,11 +9,15 @@
     Project gradient: from-[#065f46] (green), via-[#1e3a8a] (blue), to-[#ea580c] (orange) 
     We'll use #0fb981 as the base primary for compatible usage. 
   */
-  --primary: 160 91% 35%;            /* #065f46 (dark green for primary) */
-  --primary-foreground: 30 100% 97%; /* A light off-white/orange background for contrast */
-  --secondary: 222 74% 42%;          /* blue: #1e3a8a */
+  --primary: 160 91% 35%;
+  /* #065f46 (dark green for primary) */
+  --primary-foreground: 30 100% 97%;
+  /* A light off-white/orange background for contrast */
+  --secondary: 222 74% 42%;
+  /* blue: #1e3a8a */
   --secondary-foreground: 0 0% 100%;
-  --accent: 27 98% 54%;              /* orange: #ea580c */
+  --accent: 27 98% 54%;
+  /* orange: #ea580c */
   --accent-foreground: 0 0% 100%;
 
   --destructive: 1 82% 61%;
@@ -59,6 +63,7 @@
 
 .text-project-gradient {
   background: linear-gradient(90deg, #065f46 0%, #1e3a8a 60%, #ea580c 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -79,7 +84,8 @@ body {
 .section-gradient {
   background: #fff;
   border-radius: var(--radius);
-  border: 1.5px solid #e5e7eb; /* soft gray border */
+  border: 1.5px solid #e5e7eb;
+  /* soft gray border */
 }
 
 /* Sidebar: keep it white and text neutral (except project name/logo) */
@@ -107,8 +113,10 @@ body {
 
 .sidebar [data-sidebar="menu-button"][data-active="true"]:not(.button-gradient),
 [data-sidebar="menu-button"][data-active="true"]:not(.button-gradient) {
-  background: #f0fdfa !important; /* a subtle mint highlight, optional: you can set to #fff too */
-  color: #0891b2 !important; /* subtle teal for active, or fallback to #222 */
+  background: #f0fdfa !important;
+  /* a subtle mint highlight, optional: you can set to #fff too */
+  color: #0891b2 !important;
+  /* subtle teal for active, or fallback to #222 */
   font-weight: 500;
 }
 
@@ -121,6 +129,7 @@ body {
 .sidebar h1,
 .sidebar .logo {
   background: linear-gradient(90deg, #14b8a6 60%, #2dd4bf 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -135,11 +144,13 @@ body {
   border: 2px solid transparent;
   background: linear-gradient(white, white) padding-box,
     linear-gradient(90deg, #14b8a6, #f472b6, #2dd4bf, #a78bfa, #22d3ee) border-box;
-  box-shadow: 0 2px 32px rgba(20,184,166,0.09);
+  box-shadow: 0 2px 32px rgba(20, 184, 166, 0.09);
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #14b8a6aa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -149,10 +160,12 @@ body {
   0% {
     transform: translateX(16px);
   }
+
   100% {
     transform: translateX(-16px);
   }
 }
+
 .animate-move-horizontal {
   animation: move-horizontal 1.2s linear infinite alternate;
 }
@@ -162,21 +175,31 @@ body {
     opacity: 0;
     transform: translateY(12px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .6; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: .6;
+  }
 }
+
 .pulse {
-  animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* Buttons: keep gradient for ".button-gradient" only */
@@ -193,7 +216,7 @@ body {
 
 /* Soft shadow helper */
 .soft-shadow {
-  box-shadow: 0 4px 32px 0 rgba(20,184,166,0.14);
+  box-shadow: 0 4px 32px 0 rgba(20, 184, 166, 0.14);
 }
 
 /* Remove animated background (was used in body and .button-gradient only) */
@@ -201,6 +224,7 @@ body {
   0% {
     background-position: 0% 50%;
   }
+
   100% {
     background-position: 100% 50%;
   }
